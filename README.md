@@ -2,7 +2,7 @@
 Marcel Robeer (2018), *TNO/Utrecht University*
 
 ### Publications
-One scientific papers were published on Contrastive Explanation / Foil Trees:
+One scientific paper was published on Contrastive Explanation / Foil Trees:
 * J. van der Waa, M. Robeer, J. van Diggelen, M. Brinkhuis, and M. Neerincx, ``Contrastive Explanations with Local Foil Trees'', in _2018 Workshop on Human Interpretability in Machine Learning (WHI 2018)_, 2018, pp. 41-47. \[Online\]. Available: [http://arxiv.org/abs/1806.07470](http://arxiv.org/abs/1806.07470)
 
 ### Example usage
@@ -46,7 +46,7 @@ FactFoil | Description | foil_method
 ##### Explanators
 Explanator | Description | foil_strategy
 -----------|-------------|---
-`TreeExplanator` (*default*) | Explain using a decision tree  | `closest`, `size`, `impurity`, `random`
+`TreeExplanator` (*default*) | __Foil Tree__: Explain using a decision tree  | `closest`, `size`, `impurity`, `random`
 `PointExplanator` | Explain with a representatitive point (prototype) of the foil class | `closest`, `random`
 
 ##### Domain Mappers
