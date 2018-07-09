@@ -28,7 +28,7 @@ import contrastive_explanation as ce
 
 dm = ce.domain_mappers.DomainMapperTabular(train, 
                                            feature_names=data.feature_names,
-										   contrast_names=data.target_names)
+					   contrast_names=data.target_names)
 exp = ce.ContrastiveExplanation(dm, verbose=True)
 
 sample = test[0]
