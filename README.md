@@ -2,8 +2,8 @@
 Marcel Robeer (2018), *TNO/Utrecht University*
 
 ### Publications
-One scientific papers were published on Contrastive Explanation / Foil Trees:
-* J. van der Waa, M. Robeer, J. van Diggelen, M. Brinkhuis, and M. Neerincx, ``Contrastive Explanations with Local Foil Trees'', in _2018 Workshop on Human Interpretability in Machine Learning (WHI 2018)_, 2018, pp. 41-47. \[Online\]. Available: [http://arxiv.org/abs/1806.07470](http://arxiv.org/abs/1806.07470)
+One scientific paper was published on Contrastive Explanation / Foil Trees:
+* J. van der Waa, M. Robeer, J. van Diggelen, M. Brinkhuis, and M. Neerincx, "Contrastive Explanations with Local Foil Trees", in _2018 Workshop on Human Interpretability in Machine Learning (WHI 2018)_, 2018, pp. 41-47. \[Online\]. Available: [http://arxiv.org/abs/1806.07470](http://arxiv.org/abs/1806.07470)
 
 ### Example usage
 First, train model to explain
@@ -28,7 +28,7 @@ import contrastive_explanation as ce
 
 dm = ce.domain_mappers.DomainMapperTabular(train, 
                                            feature_names=data.feature_names,
-										   contrast_names=data.target_names)
+					   contrast_names=data.target_names)
 exp = ce.ContrastiveExplanation(dm, verbose=True)
 
 sample = test[0]
@@ -46,7 +46,7 @@ FactFoil | Description | foil_method
 ##### Explanators
 Explanator | Description | foil_strategy
 -----------|-------------|---
-`TreeExplanator` (*default*) | Explain using a decision tree  | `closest`, `size`, `impurity`, `random`
+`TreeExplanator` (*default*) | __Foil Tree__: Explain using a decision tree  | `closest`, `size`, `impurity`, `random`
 `PointExplanator` | Explain with a representatitive point (prototype) of the foil class | `closest`, `random`
 
 ##### Domain Mappers
