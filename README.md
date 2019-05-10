@@ -5,6 +5,9 @@ Marcel Robeer (2018), *TNO/Utrecht University*
 One scientific paper was published on Contrastive Explanation / Foil Trees:
 * J. van der Waa, M. Robeer, J. van Diggelen, M. Brinkhuis, and M. Neerincx, "Contrastive Explanations with Local Foil Trees", in _2018 Workshop on Human Interpretability in Machine Learning (WHI 2018)_, 2018, pp. 41-47. \[Online\]. Available: [http://arxiv.org/abs/1806.07470](http://arxiv.org/abs/1806.07470)
 
+It was developed as part of a Master's Thesis at Utrecht University / TNO:
+*  M. Robeer, "Contrastive Explanation for Machine Learning", MSc Thesis, Utrecht University, 2018. \[Online\]. Available: [https://dspace.library.uu.nl/handle/1874/368081](https://dspace.library.uu.nl/handle/1874/368081)
+
 ### Example usage
 First, train model to explain
 ```python
