@@ -1,5 +1,5 @@
 # Contrastive Explanation (Foil Trees)
-Marcel Robeer (2018), *TNO/Utrecht University*
+Marcel Robeer (2018-2019), *TNO/Utrecht University*
 
 ### Publications
 One scientific paper was published on Contrastive Explanation / Foil Trees:
