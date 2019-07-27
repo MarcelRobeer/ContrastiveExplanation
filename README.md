@@ -56,18 +56,28 @@ The predicted class using the `RandomForestClassifier` was 'setosa', while the s
 
 ### Choices for problem explanation
 ##### FactFoil
+Used for determining the current outcome (fact) and the outcome of interest (foil), based on a `foil_method` (e.g. second most probable class, random class, greater than the current outcome).
+
 FactFoil | Description | foil_method
 ---------|-------------|---
 `FactFoilClassification` (*default*) | Determine fact and foil for classification/unsupervised learning | `second`, `random`
 `FactFoilRegression` | Determine fact and foil for regression analysis | `greater`, `smaller`
 
 ##### Explanators
+Method for forming the explanation, either using a Foil Tree (`TreeExplanator`) as described in the [paper](http://arxiv.org/abs/1806.07470), or using a prototype (`PointExplanator`, not fully implemented). As multiple explanations hold, one can choose the `foil_strategy` as either 'closest' (shortest explanation), 'size' (move the current outcome to the area containing most samples of the foil outcome), 'impurity' (most informative foil area), or 'random' (random foil area)
+
 Explanator | Description | foil_strategy
 -----------|-------------|---
 `TreeExplanator` (*default*) | __Foil Tree__: Explain using a decision tree  | `closest`, `size`, `impurity`, `random`
 `PointExplanator` | Explain with a representatitive point (prototype) of the foil class | `closest`, `random`
 
 ##### Domain Mappers
+For handling the different types of data:
+- Tabular (rows and columns)
+- Images (rudimentary support)
+
+Maps to a general format that the explanator can form the explanation in, and then maps the explanation back into this format. Ensures meaningful feature names.
+
 DomainMapper | Description
 -------------|-------------
 `DomainMapperTabular` | Tabular data (columns with feature names, rows)
