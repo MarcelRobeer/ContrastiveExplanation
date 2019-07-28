@@ -39,16 +39,27 @@ class DomainMapper:
         self.seed = check_random_state(seed)
 
     def map_contrast_names(self,
-                           contrast):
+                           contrast,
+                           inverse=False):
         '''Map a descriptive name to a contrast if present.
 
         Args:
             contrast (int): Identifier of contrast
+            inverse (bool): Whether to return contrast name (False)
+                or contrast identifier (True)
         '''
-        if self.contrast_class is not None:
-            if self.contrast_map is not None:
-                return self.contrast_class[self.contrast_map[contrast]]
-            return self.contrast_class[contrast]
+        if inverse:
+            if self.contrast_class is not None:
+                if np.any(np.in1d(self.contrast_class, contrast)):
+                    return np.unravel_index((self.contrast_class == contrast).argmax(), self.contrast_class.shape)[0]
+                else:
+                    warnings.warn(f'Unknown foil {contrast}, using default foil_method')
+                    return None
+        else:
+            if  self.contrast_class is not None:
+                if self.contrast_map is not None:
+                    return self.contrast_class[self.contrast_map[contrast]]
+                return self.contrast_class[contrast]
         return contrast
 
     def _weights(self,

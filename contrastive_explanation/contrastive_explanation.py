@@ -127,6 +127,7 @@ class ContrastiveExplanation:
     def explain_instance(self,
                          model_predict,
                          fact_sample,
+                         foil=None,
                          foil_pick_method=None,
                          foil_strategy='informativeness',
                          generate_data=True,
@@ -139,6 +140,7 @@ class ContrastiveExplanation:
         Args:
             model_predict: Black-box model predictor (proba for class)
             fact_sample: Input sample of fact
+            foil: Manually enter a foil (if None, uses foil_pick_method)
             foil_pick_method: Method to decide on foil, choose
                 class: ('second' = second most probable decision,
                  'random' = randomly pick from not-foil)
@@ -171,9 +173,13 @@ class ContrastiveExplanation:
                                                 epsilon=epsilon)
         else:
             self.fact_foil = FactFoilClassification(verbose=self.verbose)
-
-        fact, foil = self.fact_foil.get_fact_foil(model_predict, fact_sample,
-                                                  foil_method=foil_pick_method)
+    
+        if foil is not None:
+            foil = self.domain_mapper.map_contrast_names(foil, inverse=True)
+            fact, foil = self.fact_foil.get_fact(model_predict, fact_sample, foil)
+        if foil is None:
+            fact, foil = self.fact_foil.get_fact_foil(model_predict, fact_sample,
+                                                      foil_method=foil_pick_method)
 
         # Generate neighborhood data
         if self.verbose:

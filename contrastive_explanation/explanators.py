@@ -402,12 +402,12 @@ class TreeExplanator(RuleExplanator):
 class PointExplanator(Explanator):
     '''Explain by selecting and comparing to a prototype point.'''
 
-    @check_stringvar(('strategy', ['closest', 'informativeness', 'random']))
+    @check_stringvar(('strategy', ['closest', 'medoid', 'random']))
     def contrastive_prototype(self,
                               xs,
                               ys,
                               weights,
-                              strategy='informativeness'):
+                              strategy='closest'):
         # Get foil xs
         ys_slice = [idx for idx, y in enumerate(ys) if y == 1]
         xs_foil = xs[ys_slice]
@@ -417,8 +417,9 @@ class PointExplanator(Explanator):
 
         if strategy == 'closest':
             return xs_foil[np.argmax(weights[1:]) + 1]
-        elif strategy == 'informativeness':
-            raise NotImplementedError('TODO: Foil sample point')
+        elif strategy == 'medoid':
+            print(xs_foil)
+            return xs_foil[0][0]
         elif strategy == 'random':
             return xs_foil[np.random.randint(xs_foil.shape[0], size=1), :][0]
 
@@ -456,7 +457,7 @@ class PointExplanator(Explanator):
                  xs,
                  ys,
                  weights,
-                 foil_strategy='informativeness',
+                 foil_strategy='closest',
                  **kwargs):
         '''Get rules for 'fact' and 'foil' using a
         point explanator. For arguments see Explanator.get_rule().

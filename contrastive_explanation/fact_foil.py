@@ -18,11 +18,22 @@ class FactFoil:
         self.foil = None
 
     @staticmethod
-    def _pred(model_predict, sample):
+    def _pred(model_predict, sample, pred_has_max=True):
         try:
-            return model_predict(sample.reshape(1, -1))[0]
+            pred = model_predict(sample.reshape(1, -1))[0]
         except ValueError:
-            return model_predict(np.array([sample]))[0]
+            pred = model_predict(np.array([sample]))[0]
+        if pred_has_max:
+            _pred = pred
+            if len(_pred) == 1:
+                _pred = np.array([pred[0], 1 - pred[0]])
+            return pred, np.argmax(_pred)
+        else:
+            return pred
+    
+    def __check_validity(self):
+        if self.fact == self.foil:
+            raise Exception('Fact and foil cannot be equal')
 
     def fact_foil_encode(self, model, sample, ys,
                          foil_method=default_method):
@@ -31,6 +42,22 @@ class FactFoil:
         fact, foil = self.get_fact_foil(model, sample, foil_method=foil_method)
         ys = self.encode(ys)
         return fact, foil, ys
+    
+    def get_fact(self, model_predict, sample, foil):
+        '''Determine the fact for a given sample, and use a 
+        manually provided foil.
+        
+        Args:
+            model_predict: Predictor to predict sample x
+            sample: Instance
+            foil: Chosen foil
+        
+        Returns:
+            Tuple (fact, foil)'''
+        _, self.fact = self._pred(model_predict, sample)
+        self.foil = foil
+        self.__check_validity()
+        return self.fact, self.foil
 
     def get_fact_foil(self, model, sample, foil_method=default_method):
         '''Determine the fact and foil for a given sample.
@@ -52,10 +79,8 @@ class FactFoil:
         if self.verbose:
             print(f'[F] Picked foil "{self.foil}" using foil selection '
                   f'strategy "{foil_method}"')
-
-        if self.fact == self.foil:
-            raise Exception('Fact and foil cannot be equal')
-
+        
+        self.__check_validity()
         return self.fact, self.foil
 
     def _get_fact_foil_impl(self, model_predict, sample, foil_method):
@@ -89,10 +114,7 @@ class FactFoilClassification(FactFoil):
 
     def _get_fact_foil_impl(self, model_predict, sample,
                             foil_method=default_method):
-        pred = self._pred(model_predict, sample)
-        if len(pred) == 1:
-            pred = np.array([pred[0], 1 - pred[0]])
-        fact = np.argmax(pred)
+        pred, fact = self._pred(model_predict, sample)
         foil = self.get_foil(pred, foil_method)
 
         return fact, foil
@@ -139,7 +161,7 @@ class FactFoilRegression(FactFoil):
 
     def _get_fact_foil_impl(self, model_predict, sample,
                             foil_method=default_method):
-        fact = self._pred(model_predict, sample)
+        fact = self._pred(model_predict, sample, pred_has_max=False)
         foil = self.get_foil(fact, method=foil_method)
         return fact, foil
 

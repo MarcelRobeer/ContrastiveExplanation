@@ -59,7 +59,7 @@ For more examples, check out the attached [Notebook](https://github.com/MarcelRo
 
 ### Choices for problem explanation
 ##### FactFoil
-Used for determining the current outcome (fact) and the outcome of interest (foil), based on a `foil_method` (e.g. second most probable class, random class, greater than the current outcome).
+Used for determining the current outcome (fact) and the outcome of interest (foil), based on a `foil_method` (e.g. second most probable class, random class, greater than the current outcome). Foils can also be manually selected by using the `foil=...` optional argument of the `ContrastiveExplanation.explain_instance_domain()` method.
 
 FactFoil | Description | foil_method
 ---------|-------------|---
@@ -72,7 +72,7 @@ Method for forming the explanation, either using a Foil Tree (`TreeExplanator`) 
 Explanator | Description | foil_strategy
 -----------|-------------|---
 `TreeExplanator` (*default*) | __Foil Tree__: Explain using a decision tree  | `closest`, `size`, `impurity`, `random`
-`PointExplanator` | Explain with a representatitive point (prototype) of the foil class | `closest`, `random`
+`PointExplanator` | Explain with a representatitive point (prototype) of the foil class | `closest`, `medoid`, `random`
 
 ##### Domain Mappers
 For handling the different types of data:
