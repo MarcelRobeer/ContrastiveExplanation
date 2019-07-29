@@ -23,7 +23,7 @@ It was developed as part of a Master's Thesis at Utrecht University / TNO:
 @inproceedings{vanderwaa2018,
   title={{Contrastive Explanations with Local Foil Trees}},
   author={van der Waa, Jasper and Robeer, Marcel and van Diggelen, Jurriaan and Brinkhuis, Matthieu and Neerincx, Mark},
-  booktitle = {2018 Workshop on Human Interpretability in Machine Learning (WHI)},
+  booktitle={2018 Workshop on Human Interpretability in Machine Learning (WHI)},
   year={2018}
 }
 ```
