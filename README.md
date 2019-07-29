@@ -18,6 +18,16 @@ One scientific paper was published on Contrastive Explanation / Foil Trees:
 It was developed as part of a Master's Thesis at Utrecht University / TNO:
 *  M. Robeer, "Contrastive Explanation for Machine Learning", MSc Thesis, Utrecht University, 2018. \[Online\]. Available: [https://dspace.library.uu.nl/handle/1874/368081](https://dspace.library.uu.nl/handle/1874/368081)
 
+#### Citing this package
+```
+@inproceedings{vanderwaa2018,
+  title={{Contrastive Explanations with Local Foil Trees}},
+  author={van der Waa, Jasper and Robeer, Marcel and van Diggelen, Jurriaan and Brinkhuis, Matthieu and Neerincx, Mark},
+  booktitle = {2018 Workshop on Human Interpretability in Machine Learning (WHI)},
+  year={2018}
+}
+```
+
 ## Example usage
 As a simple example, let us explain a Random Forest classifier that determine the type of flower in the well-known *Iris flower classification* problem. The data set comprises 150 instances, each one of three types of flowers (setosa, versicolor and virginica). For each instance, the data set includes four features (sepal length, sepal width, petal length, petal width) and the goal is to determine which type of flower (class) each instance is.
 
