@@ -3,6 +3,8 @@ import inspect
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.tree import _tree
+from scipy.sparse import coo_matrix, hstack
+import inspect
 
 
 ###############################
@@ -103,3 +105,36 @@ def print_binary_tree(t, sample):
                                          ' (fact)' if node == fact_leaf else ''))
 
     recurse(0, 1)
+
+###############################
+# One Hot Encoder
+###############################
+
+class Encoder():
+    def __init__(self):
+        self.name2idx = None
+        self.idx2name = None
+    
+    def fit(self, levels):
+        self.name2idx = {x: i for i, x in enumerate(levels)}
+        self.idx2name = {i: x for i, x in enumerate(levels)}
+    
+    def transform(self, column_data, inverse=False):
+        if inverse:
+            if column_data.ndim == 1:
+                return self.idx2name[np.argmax(column_data)]
+            return np.vectorize(self.idx2name.get)(np.argmax(column_data, axis=1))
+        else:
+            row_cols = [(i, self.name2idx[x])
+                        for i,x in enumerate(column_data) if x in self.name2idx]
+            data = np.ones(len(row_cols)).astype(int)
+            return(coo_matrix((data, zip(*row_cols)),
+                            shape=(column_data.shape[0], len(self))))
+    
+    def __eq__(self, other):
+        return self.name2idx == other.name2idx
+    
+    def __len__(self):
+        if self.name2idx is None:
+            return 0
+        return len(self.name2idx.items())

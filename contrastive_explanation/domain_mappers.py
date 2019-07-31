@@ -2,9 +2,10 @@ import pandas as pd
 import numpy as np
 import sklearn
 import warnings
+import itertools
 from sklearn.utils import check_random_state
 from .rules import Literal, Operator
-from .utils import cache, check_stringvar, show_image, softmax, rbf
+from .utils import cache, check_stringvar, show_image, softmax, rbf, Encoder, coo_matrix, hstack
 
 # Suppress FutureWarning of sklearn
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -79,6 +80,7 @@ class DomainMapper:
     def _data(self,
               data,
               scaled_data,
+              predict_data,
               distance_metric,
               predict_fn):
         # Calculate weights
@@ -87,7 +89,7 @@ class DomainMapper:
         weights = self._weights(scaled_data, distance_metric)
 
         # Predict; distinguish between .predict and .predict_proba
-        preds = predict_fn(data)
+        preds = predict_fn(predict_data)
         if preds.ndim > 1:
             preds = np.argmax(preds, axis=1)
 
@@ -170,12 +172,106 @@ class DomainMapperTabular(DomainMapper):
                          seed=seed)
 
         if type(train_data) is pd.core.frame.DataFrame:
-            train_data = train_data.as_matrix()
-        self.train_data = train_data
+            train_data = train_data.to_numpy(copy=True)
+        self.train_data = np.array(train_data)
         if feature_names is None:
             feature_names = [i for i in range(train_data.shape[1])]
         self.features = feature_names
         self.categorical_features = categorical_features
+
+        self.unique_vals = None
+        self.encoders = None
+        self.feature_map = categorical_features
+        self.feature_map_inv = dict()
+
+        self.original_train_data = self.train_data
+        self.train_data = self._one_hot_encode(self.train_data)
+
+    def _one_hot_encode(self, data):
+        '''One hot encoding of data, so that it can be
+        used by the decision tree.
+        
+        Args:
+            data: data to encode
+        
+        Returns:
+            One-hot encoded data'''
+        if not self.categorical_features:
+            return data
+
+        # Get unique value for all levels in a categorical feature
+        self.unique_vals = dict()
+        for column in self.categorical_features:
+            self.unique_vals[column] = set(data[:, column])
+
+        # Create encoders
+        self.encoders = {feature: Encoder() for feature in self.categorical_features}
+        for feature in self.categorical_features:
+            self.encoders[feature].fit(self.unique_vals[feature])
+        
+        # Create new mapping of indices
+        features = np.arange(self.original_train_data.shape[1])
+        self.feature_map = dict()
+        self.feature_map_inv = dict()
+        current_idx = 0
+
+        for feature in features:
+            if feature in self.categorical_features:
+                new_idx = current_idx + len(self.encoders[feature])
+                r = range(current_idx, new_idx)
+                self.feature_map[feature] = r
+                self.feature_map_inv[r[0]] = feature
+                current_idx = new_idx
+            else:
+                self.feature_map[feature] = current_idx
+                self.feature_map_inv[current_idx] = feature
+                current_idx += 1
+
+        return self._apply_encode(data)
+
+    def _apply_encode(self, data):
+        '''Encode an instance or data set.'''
+        if not self.categorical_features:
+            return data
+        if data.ndim == 1:  # Single instance
+            data = data.reshape(1, -1)
+            x = []
+            for i, value in enumerate(data.T):
+                if i in self.categorical_features:
+                    x.extend(self.encoders[i].transform(value).toarray())
+                else:
+                    x.append(value.astype(int))
+            return hstack(x).toarray()[0]
+        else:
+            x = []
+            for i, column in enumerate(data.T):
+                if i in self.categorical_features:
+                    x.append(self.encoders[i].transform(column))
+                else:
+                    x.append(coo_matrix(column.reshape(-1, 1).astype(int)))
+            return hstack(x).toarray()
+    
+    def _apply_decode(self, data):
+        '''Decode an encoded instance or data set.'''
+        if not self.categorical_features:
+            return data
+        x = []
+        if data.ndim == 1:  # Single instance
+            for k, _ in enumerate(self.feature_map_inv):
+                to_map = self.feature_map[k]
+                if k in self.categorical_features:
+                    x.append(self.encoders[k].transform(data[to_map], inverse=True))
+                else:
+                    x.append(data[to_map])
+            return np.array(x)
+        else:
+            for k, _ in enumerate(self.feature_map_inv):
+                to_map = self.feature_map[k]
+                if k in self.categorical_features:
+                    x.append(self.encoders[k].transform(data[:, to_map], inverse=True))
+                else:
+                    x.append(data[:, to_map])
+            return np.column_stack(x)
 
     @cache
     def generate_neighborhood_data(self,
@@ -185,10 +281,9 @@ class DomainMapperTabular(DomainMapper):
                                    n_samples=500,
                                    seed=1,
                                    **kwargs):
-        '''Generate neighborhood data for a given point (currently using LIME)
+        '''Generate neighborhood data for a given point (currently samples training data)
 
         Args:
-            train_data: Training data predict_fn was trained on
             sample: Observed sample
             predict_fn: Black box predictor to predict all points
             distance_metric: Distance metric used for weights
@@ -207,8 +302,10 @@ class DomainMapperTabular(DomainMapper):
         _, neighbor_data = e._LimeTabularExplainer__data_inverse(sample,
                                                                  n_samples)
         scaled_data = (neighbor_data - e.scaler.mean_) / e.scaler.scale_
+        predict_data = self._apply_decode(neighbor_data)
         return (*self._data(neighbor_data, scaled_data,
-                            distance_metric, predict_fn),
+                            predict_data, distance_metric,
+                            predict_fn),
                 sample)
 
     def map_feature_names(self, explanation, remove_last=False):

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import operator
 import warnings
 import sklearn
@@ -165,6 +166,9 @@ class ContrastiveExplanation:
             Tuple (fact, foil, counterfactual), feed into the explain()
             function in the domain_mapper
         '''
+        if type(fact_sample) is pd.core.series.Series:
+            fact_sample = np.array(fact_sample)
+
         st = time.time()
 
         # Get fact and foil
@@ -185,11 +189,12 @@ class ContrastiveExplanation:
         if self.verbose:
             print('[D] Obtaining neighborhood data')
 
+        encoded_fact_sample = self.domain_mapper._apply_encode(fact_sample)
         if generate_data:
             data_fn = self.domain_mapper.generate_neighborhood_data
         else:
             data_fn = self.domain_mapper.sample_training_data
-        xs, weights, ys, fact_sample = data_fn(fact_sample,
+        xs, weights, ys, fact_sample = data_fn(encoded_fact_sample,
                                                model_predict,
                                                n_samples=n_samples,
                                                foil_encode_fn=self.fact_foil.encode,
@@ -203,7 +208,7 @@ class ContrastiveExplanation:
             return fact, foil, None, None, 0, 0, time.time() - st
 
         # Train model and get rules
-        rule, confidence, local_fidelity = self.explanator.get_rule(fact_sample,
+        rule, confidence, local_fidelity = self.explanator.get_rule(encoded_fact_sample,
                                                                     fact, foil,
                                                                     xs, ys_foil,
                                                                     weights,
@@ -229,7 +234,7 @@ class ContrastiveExplanation:
             t.fit(xs, ys, sample_weight=weights)
 
             if t.tree_.node_count > 1:
-                fact_rule = e.decision_path(t, fact_sample)
+                fact_rule = e.decision_path(t, encoded_fact_sample)
                 factual = self.form_explanation(fact_rule, contrastive=False)[:-1]
             else:
                 factual = None
@@ -241,7 +246,7 @@ class ContrastiveExplanation:
                     self.explanator.generalize < 2):
                 self.explanator.generalize = 2
                 return self.explain_instance(model_predict,
-                                             fact_sample,
+                                             encoded_fact_sample,
                                              foil_pick_method=foil_pick_method,
                                              foil_strategy=foil_strategy,
                                              generate_data=generate_data,
