@@ -189,7 +189,7 @@ class ContrastiveExplanation:
         if self.verbose:
             print('[D] Obtaining neighborhood data')
 
-        encoded_fact_sample = self.domain_mapper._apply_encode(fact_sample)
+        encoded_fact_sample = self.domain_mapper.apply_encode(fact_sample)
         if generate_data:
             data_fn = self.domain_mapper.generate_neighborhood_data
         else:

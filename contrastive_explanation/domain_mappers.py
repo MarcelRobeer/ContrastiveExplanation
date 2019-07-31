@@ -172,7 +172,7 @@ class DomainMapperTabular(DomainMapper):
                          seed=seed)
 
         if type(train_data) is pd.core.frame.DataFrame:
-            train_data = train_data.to_numpy(copy=True)
+            raise Exception('Use the subclass DomainMapperPandas to work with Pandas DataFrames')
         self.train_data = np.array(train_data)
         if feature_names is None:
             feature_names = [i for i in range(train_data.shape[1])]
@@ -192,11 +192,11 @@ class DomainMapperTabular(DomainMapper):
         used by the decision tree.
         
         Args:
-            data: data to encode
+            data: Data to encode
         
         Returns:
-            One-hot encoded data'''
-        if not self.categorical_features:
+            One-hot Encoded data'''
+        if self.categorical_features is None:
             return data
 
         # Get unique value for all levels in a categorical feature
@@ -227,15 +227,15 @@ class DomainMapperTabular(DomainMapper):
                 self.feature_map_inv[current_idx] = feature
                 current_idx += 1
 
-        return self._apply_encode(data)
+        return self.apply_encode(data)
 
-    def _apply_encode(self, data):
+    def apply_encode(self, data):
         '''Encode an instance or data set.'''
-        if not self.categorical_features:
+        if self.categorical_features is None:
             return data
+        x = []
         if data.ndim == 1:  # Single instance
             data = data.reshape(1, -1)
-            x = []
             for i, value in enumerate(data.T):
                 if i in self.categorical_features:
                     x.extend(self.encoders[i].transform(value).toarray())
@@ -243,7 +243,6 @@ class DomainMapperTabular(DomainMapper):
                     x.append(value.astype(int))
             return hstack(x).toarray()[0]
         else:
-            x = []
             for i, column in enumerate(data.T):
                 if i in self.categorical_features:
                     x.append(self.encoders[i].transform(column))
@@ -253,7 +252,7 @@ class DomainMapperTabular(DomainMapper):
     
     def _apply_decode(self, data):
         '''Decode an encoded instance or data set.'''
-        if not self.categorical_features:
+        if self.categorical_features is None:
             return data
         x = []
         if data.ndim == 1:  # Single instance
@@ -386,6 +385,29 @@ class DomainMapperTabular(DomainMapper):
                        f"'{self.rule_to_str(factuals, remove_last=True)}'")
 
 
+class DomainMapperPandas(DomainMapperTabular):
+    '''Domain mapper for Pandas dataframes.'''
+
+    def __init__(self,
+                 train_data,
+                 contrast_names=None,
+                 kernel_width=None,
+                 seed=1):
+        if type(train_data) is not pd.core.frame.DataFrame:
+            raise Exception('Use DomainMapperTabular to work with other types of tabular data')
+        
+        feature_names = train_data.columns.values
+        categorical_features = np.nonzero(train_data.dtypes == 'object')[0]
+        categorical_features = categorical_features if categorical_features != [] else None
+        train_data = train_data.to_numpy(copy=True)
+        super().__init__(train_data,
+                         feature_names,
+                         contrast_names=contrast_names,
+                         categorical_features=categorical_features,
+                         kernel_width=kernel_width,
+                         seed=seed)
+
+
 class DomainMapperImage(DomainMapper):
     '''Domain mapper for image data (CNN-only) using feature_fn.'''
 
@@ -451,6 +473,9 @@ class DomainMapperImageSegments(DomainMapper):
         if self.segments is None:
             return 0
         return np.unique(self.segments).shape[0]
+
+    def apply_encode(self, data):
+        return data
 
     def data_labels(self,
                     predict_fn,
