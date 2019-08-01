@@ -3,6 +3,8 @@
 > 
 > Marcel Robeer (2018-2019), *TNO/Utrecht University*
 
+![License](https://img.shields.io/github/license/marcelrobeer/ContrastiveExplanation?style=flat-square) ![Python version](https://img.shields.io/badge/python-3.6%20%7C%203.7-blue?style=flat-square) ![GitHub last commit](https://img.shields.io/github/last-commit/marcelrobeer/contrastiveexplanation?style=flat-square)
+
 Contrastive Explanation provides an explanation for why an instance had the current outcome (*fact*) rather than a targeted outcome of interest (*foil*). These *counterfactual* explanations limit the explanation to the features relevant in distinguishing fact from foil, thereby disregarding irrelevant features. The idea of contrastive explanations is captured in this Python package `ContrastiveExplanation`. Example facts and foils are:
 
 Machine Learning (ML) type | Problem | Explainable AI (XAI) question | Fact | Foil
