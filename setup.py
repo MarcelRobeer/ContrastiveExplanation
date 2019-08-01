@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 if sys.version_info < (3, 6):
     sys.exit('Python>=3.6 is required by ContrastiveExplanation (Foil Trees).')
 
-setup(name='contrastive_explanation',
+setup(name='ContrastiveExplanation',
       version='0.1',
       python_requires='>3.6',
       description='Contrastive and counterfactual explanations for machine learning (ML) using Foil Trees',
