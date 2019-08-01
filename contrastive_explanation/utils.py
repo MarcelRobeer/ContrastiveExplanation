@@ -1,6 +1,10 @@
 import functools
 import inspect
 import numpy as np
+import pandas as pd
+import os
+import urllib.request
+from sklearn.preprocessing import LabelEncoder
 from matplotlib import pyplot as plt
 from sklearn.tree import _tree
 from scipy.sparse import coo_matrix, hstack
@@ -107,6 +111,31 @@ def print_binary_tree(t, sample):
     recurse(0, 1)
 
 ###############################
+# Data set downloader
+###############################
+
+def download_data(url, folder='data'):
+    url = url.strip()
+    name = url.rsplit('/', 1)[-1]
+    fname = os.path.join(folder, name)
+
+    # Create folder if it does not exist
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    
+    # Download file if it does not exist
+    if not os.path.isfile(fname):
+        try:
+            urllib.request.urlretrieve(url, fname)
+        except Exception as e:
+            print(e)
+            print(f'Error downloading {url}, please download manually')
+            return None
+    
+    return fname
+
+
+###############################
 # One Hot Encoder
 ###############################
 
@@ -138,3 +167,33 @@ class Encoder():
         if self.name2idx is None:
             return 0
         return len(self.name2idx.items())
+
+
+###############################
+# Label Encoder
+###############################
+
+class CustomLabelEncoder(LabelEncoder):
+    def __init__(self, to_encode):
+        self.to_encode = to_encode
+        self.encode_indices = []
+        self.label_encoders = dict([(feature, LabelEncoder()) for feature in to_encode])
+        
+    def fit(self, y):
+        self.encode_indices = [y.columns.get_loc(c) for c in self.to_encode]
+        for feature in self.to_encode:
+            self.label_encoders[feature].fit(y[feature])
+        return self
+    
+    def fit_transform(self, y, *args, **kwargs):
+        return self.transform(y, *args, **kwargs)
+    
+    def transform(self, y, *args, **kwargs):
+        y_ = y.copy()
+        if type(y_) is pd.core.frame.DataFrame:
+            for feature in self.to_encode:
+                y_.loc[:, feature] = self.label_encoders[feature].transform(y_[feature])
+        else:
+            for i, feature in enumerate(self.encode_indices):
+                y_[:, feature] = self.label_encoders[self.to_encode[i]].transform(y_[:, feature])
+        return y_

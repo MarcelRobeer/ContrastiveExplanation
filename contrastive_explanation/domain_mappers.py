@@ -183,6 +183,7 @@ class DomainMapperTabular(DomainMapper):
         self.encoders = None
         self.feature_map = categorical_features
         self.feature_map_inv = dict()
+        self.feature_map_inv_verbose = dict()
 
         self.original_train_data = self.train_data
         self.train_data = self._one_hot_encode(self.train_data)
@@ -226,7 +227,9 @@ class DomainMapperTabular(DomainMapper):
                 self.feature_map[feature] = current_idx
                 self.feature_map_inv[current_idx] = feature
                 current_idx += 1
-
+        
+        self.feature_map_inv_verbose = dict(itertools.chain.from_iterable([(v, k)] if type(v) is int else [(v_, k) 
+                                                                            for v_ in v] for (k, v) in self.feature_map.items()))        
         return self.apply_encode(data)
 
     def apply_encode(self, data):
@@ -294,8 +297,13 @@ class DomainMapperTabular(DomainMapper):
             neighor_data_labels (ys around sample, corresponding to xs)
         '''
         from lime.lime_tabular import LimeTabularExplainer
+
+        categorical_features = None
+        if self.categorical_features is not None:
+            categorical_features = list(itertools.chain.from_iterable(self.feature_map[c] for c in self.categorical_features))
+
         e = LimeTabularExplainer(self.train_data,
-                                 categorical_features=self.categorical_features,
+                                 categorical_features=categorical_features,
                                  discretize_continuous=False,
                                  random_state=check_random_state(seed))
         _, neighbor_data = e._LimeTabularExplainer__data_inverse(sample,
@@ -313,7 +321,6 @@ class DomainMapperTabular(DomainMapper):
         Args:
             explanation: Explanation obtained with
                 get_explanation() or descriptive_path() function
-            feature_names: Feature names
             remove_last: Remove last tuple from explanation
 
         Returns:
@@ -328,8 +335,15 @@ class DomainMapperTabular(DomainMapper):
                     ret = Literal(*ret)
                 else:
                     ret = type(x)(ret)
+            
+            # For categorical features
             if (type(ret) is Literal and self.categorical_features is not None):
-                if x[0] in self.categorical_features:
+                feature = self.feature_map_inv_verbose[x[0]]
+                if feature in self.categorical_features:
+                    offset = x[0] - self.feature_map[feature][0]
+                    ret.feature = self.features[feature]
+                    ret.value = self.encoders[feature].idx2name[offset]
+                    ret.operator = Operator.EQ
                     ret.categorical = True
             return ret
 
