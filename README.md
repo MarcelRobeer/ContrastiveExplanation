@@ -65,7 +65,7 @@ exp.explain_instance_domain(model.predict_proba, sample)
 The predicted class using the `RandomForestClassifier` was 'setosa', while the second most probable class 'versicolor' may have been expected instead. The difference of why the current instance was classified 'setosa' is because its sepal width is more than 3.354 centimers and its petal width is less than or equal to 0.674 centimers. In other words, if the instance would keep all feature values the same, but change its sepal width to less than 3.354 centimers and its petal width to more than 0.674 centimers, the black-box classifier would have changed the outcome to 'versicolor'.
 
 #### More examples
-For more examples, check out the attached [Notebook](https://nbviewer.jupyter.org/github/MarcelRobeer/ContrastiveExplanation/blob/master/examples/Contrastive%20explanation%20-%20example%20usage.ipynb).
+For more examples, check out the attached [Notebook](https://nbviewer.jupyter.org/github/MarcelRobeer/ContrastiveExplanation/blob/master/Contrastive%20explanation%20-%20example%20usage.ipynb).
 
 ### Choices for problem explanation
 ##### FactFoil

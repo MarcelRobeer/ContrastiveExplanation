@@ -6,6 +6,7 @@ ROUND = 3
 
 class Operator(Enum):
     EQ = '='
+    NOTEQ = '/='
     SEQ = '<='
     GEQ = '>='
     ST = '<'
@@ -28,8 +29,9 @@ class Literal:
                     ', '.join(str(round(v, ROUND)) for v in self.value))
             else:
                 self.value = self.value[0]
-        value = round(self.value, ROUND) if not self.categorical else self.value
-        return f'{self.feature} {self.operator.value} {value}'
+        if self.categorical:
+            return f'{self.feature} {self.operator.value} {self.value}'
+        return f'{self.feature} {self.operator.value} {round(self.value, ROUND)}'
 
     def __repr__(self):
         return f'Literal(feature={self.feature}, operator={self.operator!r}, '\

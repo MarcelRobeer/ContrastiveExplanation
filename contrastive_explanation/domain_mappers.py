@@ -343,7 +343,7 @@ class DomainMapperTabular(DomainMapper):
                     offset = x[0] - self.feature_map[feature][0]
                     ret.feature = self.features[feature]
                     ret.value = self.encoders[feature].idx2name[offset]
-                    ret.operator = Operator.EQ
+                    ret.operator = Operator.EQ if ret.operator is Operator.GEQ else Operator.NOTEQ
                     ret.categorical = True
             return ret
 
