@@ -2,9 +2,11 @@ import numpy as np
 import networkx as nx
 import warnings
 import sklearn
+
 from sklearn import tree, ensemble, metrics
 from sklearn.tree import _tree
 from sklearn.utils import check_random_state
+
 from .rules import Operator, Literal
 from .utils import cache, check_stringvar, check_relvar, print_binary_tree
 

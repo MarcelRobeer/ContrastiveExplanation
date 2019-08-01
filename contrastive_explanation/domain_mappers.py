@@ -3,7 +3,9 @@ import numpy as np
 import sklearn
 import warnings
 import itertools
+
 from sklearn.utils import check_random_state
+
 from .rules import Literal, Operator
 from .utils import cache, check_stringvar, show_image, softmax, rbf, Encoder, coo_matrix, hstack
 

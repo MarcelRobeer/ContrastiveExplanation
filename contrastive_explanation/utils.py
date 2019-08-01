@@ -4,11 +4,11 @@ import numpy as np
 import pandas as pd
 import os
 import urllib.request
+
 from sklearn.preprocessing import LabelEncoder
 from matplotlib import pyplot as plt
 from sklearn.tree import _tree
 from scipy.sparse import coo_matrix, hstack
-import inspect
 
 
 ###############################
