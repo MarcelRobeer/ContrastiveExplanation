@@ -127,4 +127,3 @@ dmypy.json
 .DS_Store
 data/
 .vs_code/
-.travis.yml

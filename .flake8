@@ -1,5 +1,5 @@
 [flake8]
-exclude = .git,__pycache__,__init__.py,.eggs
+exclude = .git,__pycache__,__init__.py,setup.py,.eggs
 extend-ignore =
     D413
     D205
