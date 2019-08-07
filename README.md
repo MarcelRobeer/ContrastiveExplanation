@@ -99,4 +99,4 @@ DomainMapper | Description
 `DomainMapperImage` | Image data
 
 ## License
-ContrasteExplanation is [BSD-3 Licensed](https://github.com/MarcelRobeer/ContrastiveExplanation/blob/master/LICENSE).
+ContrastiveExplanation is [BSD-3 Licensed](https://github.com/MarcelRobeer/ContrastiveExplanation/blob/master/LICENSE).
