@@ -5,13 +5,15 @@
 
 ![Travis (.org)](https://img.shields.io/travis/MarcelRobeer/ContrastiveExplanation?style=flat-square) ![License](https://img.shields.io/github/license/marcelrobeer/ContrastiveExplanation?style=flat-square) ![Python version](https://img.shields.io/badge/python-3.6%20%7C%203.7-blue?style=flat-square)
 
+#### Contents
 1. [Introduction](#introduction)
 2. [Publications: citing this package](#publications)
 3. [Example usage](#example)
 4. [Documentation: choices for problem explanation](#documentation)
 5. [License](#license)
 
-## Introduction <a name="introduction"></a>
+<a name="introduction"></a>
+## Introduction 
 Contrastive Explanation provides an explanation for why an instance had the current outcome (*fact*) rather than a targeted outcome of interest (*foil*). These *counterfactual* explanations limit the explanation to the features relevant in distinguishing fact from foil, thereby disregarding irrelevant features. The idea of contrastive explanations is captured in this Python package `ContrastiveExplanation`. Example facts and foils are:
 
 Machine Learning (ML) type | Problem | Explainable AI (XAI) question | Fact | Foil
@@ -37,7 +39,8 @@ It was developed as part of a Master's Thesis at Utrecht University / TNO:
 }
 ```
 
-## Example usage  <a name="example"></a>
+<a name="example"></a>
+## Example usage  
 As a simple example, let us explain a Random Forest classifier that determine the type of flower in the well-known *Iris flower classification* problem. The data set comprises 150 instances, each one of three types of flowers (setosa, versicolor and virginica). For each instance, the data set includes four features (sepal length, sepal width, petal length, petal width) and the goal is to determine which type of flower (class) each instance is.
 
 #### Steps
@@ -76,7 +79,10 @@ The predicted class using the `RandomForestClassifier` was 'setosa', while the s
 #### More examples
 For more examples, check out the attached [Notebook](https://nbviewer.jupyter.org/github/MarcelRobeer/ContrastiveExplanation/blob/master/Contrastive%20explanation%20-%20example%20usage.ipynb).
 
-## Documentation <a name="documentation"></a>
+<a name="documentation"></a>
+## Documentation
+Several choices can be made to tailor the explanation to your type of explanation problem.
+
 ### Choices for problem explanation 
 ##### FactFoil
 Used for determining the current outcome (fact) and the outcome of interest (foil), based on a `foil_method` (e.g. second most probable class, random class, greater than the current outcome). Foils can also be manually selected by using the `foil=...` optional argument of the `ContrastiveExplanation.explain_instance_domain()` method.
@@ -106,5 +112,6 @@ DomainMapper | Description
 `DomainMapperTabular` | Tabular data (columns with feature names, rows)
 `DomainMapperImage` | Image data
 
-## License  <a name="license"></a>
+<a name="license"></a>
+## License
 ContrastiveExplanation is [BSD-3 Licensed](https://github.com/MarcelRobeer/ContrastiveExplanation/blob/master/LICENSE).
