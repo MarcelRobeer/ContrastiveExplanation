@@ -97,3 +97,6 @@ DomainMapper | Description
 -------------|-------------
 `DomainMapperTabular` | Tabular data (columns with feature names, rows)
 `DomainMapperImage` | Image data
+
+## License
+ContrasteExplanation is [BSD-3 Licensed](https://github.com/MarcelRobeer/ContrastiveExplanation/blob/master/LICENSE).
