@@ -1,7 +1,13 @@
+"""Uses generic tabular data to explain a single instance with
+a contrastive/counterfactual explanation.
+
+Attributes:
+    DEBUG (bool): Debug mode enabled
+"""
+
 import numpy as np
 import networkx as nx
 import warnings
-import sklearn
 
 from sklearn import tree, ensemble, metrics
 from sklearn.tree import _tree
@@ -15,17 +21,17 @@ DEBUG = False
 
 
 class Explanator:
-    '''General class for Explanators (method to acquire explanation).'''
+    """General class for Explanators (method to acquire explanation)."""
 
     def __init__(self,
                  verbose=False,
                  seed=1):
-        '''Init.
+        """Init.
 
         Args:
             verbose (bool): Print intermediary steps of algorithm
             seed (int): Seed for random functions
-        '''
+        """
         self.verbose = verbose
         self.seed = check_random_state(seed)
 
@@ -37,7 +43,7 @@ class Explanator:
                  ys,
                  weights,
                  **kwargs):
-        '''Get rules for 'fact' and 'foil' using an explanator.
+        """Get rules for 'fact' and 'foil' using an explanator.
 
         Args:
             fact_sample: Sample x of fact
@@ -53,21 +59,22 @@ class Explanator:
 
         Returns:
             foil_path (descriptive_path for foil), confidence
-        '''
+        """
         raise NotImplementedError('Implemented in subclasses')
 
     def get_explanation(self, rules):
+        """Get explanation given a set of rules."""
         raise NotImplementedError('Implemented in subclasses')
 
 
 class RuleExplanator(Explanator):
-    '''General class for rule-based Explanators.'''
+    """General class for rule-based Explanators."""
 
     def get_explanation(self, rules, contrastive=True):
-        '''Get an explanation given a rule, of why the fact
+        """Get an explanation given a rule, of why the fact
         is outside of the foil decision boundary (contrastive) or
         why the fact is inside the fact decision boundary.
-        '''
+        """
         for feature, threshold, _, foil_greater, fact_greater in rules:
             if (contrastive and fact_greater and not foil_greater or
                     not contrastive and foil_greater):
@@ -80,16 +87,17 @@ class RuleExplanator(Explanator):
 
 
 class TreeExplanator(RuleExplanator):
-    '''Explain using a decision tree.'''
+    """Explain using a decision tree."""
 
     def __init__(self,
-                 generalize=2,#0.01,
+                 generalize=2,
                  verbose=False,
                  seed=1):
-        '''Init.
+        """Init.
 
         Args:
-            Generalize [0, 1]: Lower = overfit more, higher = generalize more'''
+            Generalize [0, 1]: Lower = overfit more, higher = generalize more
+        """
         super().__init__(verbose=verbose, seed=seed)
         self.generalize = generalize
         self.tree = None
@@ -97,7 +105,7 @@ class TreeExplanator(RuleExplanator):
 
     @cache
     def _foil_tree(self, xs, ys, weights, seed, **dtargs):
-        '''Classifies foil-vs-rest using a DecisionTreeClassifier.
+        """Classifies foil-vs-rest using a DecisionTreeClassifier.
 
         Args:
             xs: Input data
@@ -109,7 +117,7 @@ class TreeExplanator(RuleExplanator):
         Returns:
             Trained model on input data for binary
             classification (output vs rest)
-        '''
+        """
         model = tree.DecisionTreeClassifier(random_state=check_random_state(seed),
                                             class_weight='balanced',
                                             **dtargs)
@@ -119,7 +127,8 @@ class TreeExplanator(RuleExplanator):
         # and explanation by training a forest of trees and picking the highest
         # performance estimator
         if model.tree_.max_depth < 2:
-            forest = ensemble.RandomForestClassifier(random_state=check_random_state(seed),
+            seed_ = check_random_state(seed)
+            forest = ensemble.RandomForestClassifier(random_state=seed_,
                                                      class_weight='balanced')
             forest.fit(xs, ys, sample_weight=weights)
 
@@ -140,7 +149,7 @@ class TreeExplanator(RuleExplanator):
         return model, local_fidelity
 
     def descriptive_path(self, decision_path, sample, tree):
-        '''Creates a descriptive path for a decision_path of node ids.
+        """Create a descriptive path for a decision_path of node ids.
 
         Args:
             decision_path (list, np.array): Node ids to describe
@@ -152,7 +161,7 @@ class TreeExplanator(RuleExplanator):
                     decision_path > threshold,
                     sample value > threshold)
             for all node ids in the decision_path
-        '''
+        """
         feature = tree.tree_.feature
         threshold = tree.tree_.threshold
 
@@ -164,7 +173,7 @@ class TreeExplanator(RuleExplanator):
                 for node, greater in decision_path]
 
     def decision_path(self, tree, sample):
-        '''Get a descriptive decision path of a sample.
+        """Get a descriptive decision path of a sample.
 
         Args:
             tree: sklearn tree
@@ -172,7 +181,7 @@ class TreeExplanator(RuleExplanator):
 
         Returns:
             Descriptive decision path for sample
-        '''
+        """
         dp = list(np.nonzero(tree.decision_path(sample.reshape(1, -1)))[1])
         if len(dp) == 0:
             return []
@@ -182,20 +191,20 @@ class TreeExplanator(RuleExplanator):
         return self.descriptive_path(list(zip(dp, turned_right)), sample, tree)
 
     def __to_graph(self, t, node=0):
-        '''Recursively obtain graph of a sklearn tree.
+        """Recursively obtain graph of a sklearn tree.
 
         Args:
             t: sklearn tree.tree_
             node: Node ID
 
         Returns: Graph of tuples (parent_id, child_id, right_path_taken)
-        '''
-        l = t.children_left[node]
-        r = t.children_right[node]
+        """
+        left = t.children_left[node]
+        right = t.children_right[node]
 
-        if l != _tree.TREE_LEAF:
-            left_path = [(node, l, False)] + self.__to_graph(t, l)
-            right_path = [(node, r, True)] + self.__to_graph(t, r)
+        if left != _tree.TREE_LEAF:
+            left_path = [(node, left, False)] + self.__to_graph(t, left)
+            right_path = [(node, right, True)] + self.__to_graph(t, right)
             return left_path + right_path
         return []
 
@@ -207,7 +216,7 @@ class TreeExplanator(RuleExplanator):
 
     @cache
     def _fact_foil_graph(self, tree, start_node=0):
-        '''Convert a tree into a graph from the fact_leaf to
+        """Convert a tree into a graph from the fact_leaf to
         all other leaves.
 
         Args:
@@ -216,14 +225,14 @@ class TreeExplanator(RuleExplanator):
 
         Returns:
             Graph, list of foil nodes
-        '''
+        """
         # Convert tree to graph
         graph = self.__to_graph(tree, node=start_node)
 
         # Acquire the foil leafs
         foil_nodes = [node for node in self.__get_nodes(graph)
-                      if tree.feature[node] == _tree.TREE_UNDEFINED and
-                        np.argmax(tree.value[node]) == 1]
+                      if (tree.feature[node] == _tree.TREE_UNDEFINED and
+                          np.argmax(tree.value[node]) == 1)]
 
         return graph, foil_nodes
 
@@ -247,7 +256,7 @@ class TreeExplanator(RuleExplanator):
                 yield v1, v2, greater, 0.0
 
     def __shortest_path(self, g, start, end):
-        '''Determine shortest path from 'start' to
+        """Determine shortest path from 'start' to
         'end' in undirected graph 'g'.
 
         Args:
@@ -258,7 +267,7 @@ class TreeExplanator(RuleExplanator):
 
         Returns:
             Shortest path (list of vertices)
-        '''
+        """
         G = nx.Graph()
         for v1, v2, _, w in g:
             G.add_edge(v1, v2, weight=w)
@@ -272,7 +281,7 @@ class TreeExplanator(RuleExplanator):
                   foil_nodes,
                   tree_data,
                   strategy='informativeness'):
-        '''Get shortest path in graph based on strategy.
+        """Get shortest path in graph based on strategy.
 
         Args:
             graph: Unweighted graph with tuples (v1, v2, _)
@@ -284,8 +293,7 @@ class TreeExplanator(RuleExplanator):
 
         Returns:
             List of foil decisions, represented as descriptive_path
-        '''
-
+        """
         # Add weights to vertices
         weighted_graph = list(self.__construct_tuples(graph, tree_data,
                                                       strategy))
@@ -325,7 +333,7 @@ class TreeExplanator(RuleExplanator):
     def closest_decision(self, tree, sample,
                          strategy='informativeness',
                          beta=5):
-        '''Find the closest decision that is of a class other than the
+        """Find the closest decision that is of a class other than the
         target class.
 
         Args:
@@ -337,7 +345,7 @@ class TreeExplanator(RuleExplanator):
         Returns:
             Ordered descriptive decision path difference,
             confidence of leaf decision
-        '''
+        """
         # Only search part of tree depending on tree size
         decision_path = tree.decision_path(sample.reshape(1, -1)).indices
         if len(decision_path) < 2:
@@ -381,28 +389,28 @@ class TreeExplanator(RuleExplanator):
                  ys,
                  weights,
                  foil_strategy='informativeness'):
-        '''Get rules for 'fact' and 'foil' using a
+        """Get rules for 'fact' and 'foil' using a
         decision tree explanator. For arguments see
         Explanator.get_rule().
-        '''
+        """
         if self.verbose:
             print("[E] Explaining with a decision tree...")
 
         # Train a one-vs-rest tree on the foil data
-        self.tree, local_fidelity = self._foil_tree(xs, ys, weights,
-                                                    self.seed,
-                                                    min_samples_split=self.generalize)
+        self.tree, fidelity = self._foil_tree(xs, ys, weights,
+                                              self.seed,
+                                              min_samples_split=self.generalize)
 
         # Get decision path
         path, confidence = self.closest_decision(self.tree,
                                                  fact_sample,
                                                  strategy=foil_strategy)
 
-        return path, confidence, local_fidelity
+        return path, confidence, fidelity
 
 
 class PointExplanator(Explanator):
-    '''Explain by selecting and comparing to a prototype point.'''
+    """Explain by selecting and comparing to a prototype point."""
 
     @check_stringvar(('strategy', ['closest', 'medoid', 'random']))
     def contrastive_prototype(self,
@@ -410,6 +418,7 @@ class PointExplanator(Explanator):
                               ys,
                               weights,
                               strategy='closest'):
+        """Get a contrastive sample based on strategy."""
         # Get foil xs
         ys_slice = [idx for idx, y in enumerate(ys) if y == 1]
         xs_foil = xs[ys_slice]
@@ -429,7 +438,7 @@ class PointExplanator(Explanator):
                         fact_sample,
                         foil_sample,
                         normalize=False):
-        '''Calculate difference between two equal length samples.
+        """Calculate difference between two equal length samples.
 
         Args:
             fact_sample: Sample for fact
@@ -439,8 +448,7 @@ class PointExplanator(Explanator):
         Returns:
             Difference between fact_sample and foil_sample ordered
             by magnitude of difference
-        '''
-
+        """
         if len(fact_sample) != len(foil_sample):
             raise Exception('Number of features of fact sample and '
                             'prototype point should be equal')
@@ -461,9 +469,9 @@ class PointExplanator(Explanator):
                  weights,
                  foil_strategy='closest',
                  **kwargs):
-        '''Get rules for 'fact' and 'foil' using a
+        """Get rules for 'fact' and 'foil' using a
         point explanator. For arguments see Explanator.get_rule().
-        '''
+        """
         if self.verbose:
             print("[E] Explaining with a prototype point...")
 
@@ -481,9 +489,9 @@ class PointExplanator(Explanator):
         return self.path_difference(fact_sample, foil_sample), 0, 0
 
     def get_explanation(self, rules, contrastive=True):
-        '''Get an explanation given a rule, of why the fact
+        """Get an explanation given a rule, of why the fact
         is not a foil (contrastive) or why it is a fact.
-        '''
+        """
         for feature, difference, _, is_negative in rules:
             if (contrastive and is_negative or
                     not contrastive and not is_negative):

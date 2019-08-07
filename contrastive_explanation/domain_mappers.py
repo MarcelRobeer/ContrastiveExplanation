@@ -1,3 +1,8 @@
+"""DomainMappers map from a domain (e.g. tabular or images) into a generic tabular
+format for the Explainer to use, and mapping the explanation back into
+this domain.
+"""
+
 import pandas as pd
 import numpy as np
 import sklearn
@@ -5,21 +10,24 @@ import warnings
 import itertools
 
 from sklearn.utils import check_random_state
+from scipy.sparse import coo_matrix, hstack
 
 from .rules import Literal, Operator
-from .utils import cache, check_stringvar, show_image, softmax, rbf, Encoder, coo_matrix, hstack
+from .utils import cache, check_stringvar, show_image, rbf, Encoder
 
 # Suppress FutureWarning of sklearn
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 class DomainMapper:
+    """General DomainMapper class."""
+
     def __init__(self,
                  train_data,
                  contrast_names=None,
                  kernel_width=.25,
                  seed=1):
-        '''Init.
+        """Init.
 
         Args:
             train_data: Original data, to obtain input distributions
@@ -27,7 +35,7 @@ class DomainMapper:
             contrast_names (list/dict): Names of contrasts (including fact
                 and foil)
             seed (int): Seed for random functions
-        '''
+        """
         self.train_data = train_data
         self.kernel_fn = lambda d: rbf(d, sigma=kernel_width)
 
@@ -44,22 +52,24 @@ class DomainMapper:
     def map_contrast_names(self,
                            contrast,
                            inverse=False):
-        '''Map a descriptive name to a contrast if present.
+        """Map a descriptive name to a contrast if present.
 
         Args:
             contrast (int): Identifier of contrast
             inverse (bool): Whether to return contrast name (False)
                 or contrast identifier (True)
-        '''
+        """
         if inverse:
             if self.contrast_class is not None:
                 if np.any(np.in1d(self.contrast_class, contrast)):
-                    return np.unravel_index((self.contrast_class == contrast).argmax(), self.contrast_class.shape)[0]
+                    return np.unravel_index((self.contrast_class == contrast).argmax(),
+                                             self.contrast_class.shape)[0]
                 else:
-                    warnings.warn(f'Unknown foil {contrast}, using default foil_method')
+                    warnings.warn(f'Unknown foil {contrast}, ',
+                                   'using default foil_method')
                     return None
         else:
-            if  self.contrast_class is not None:
+            if self.contrast_class is not None:
                 if self.contrast_map is not None:
                     return self.contrast_class[self.contrast_map[contrast]]
                 return self.contrast_class[contrast]
@@ -69,7 +79,7 @@ class DomainMapper:
                  data,
                  distance_metric,
                  sample=None):
-        '''Calculate sample weights based on distance metric.'''
+        """Calculate sample weights based on distance metric."""
         if sample is None:
             sample = data[0].reshape(1, -1)
         distances = sklearn.metrics.pairwise_distances(
@@ -102,6 +112,7 @@ class DomainMapper:
                                    n_samples,
                                    seed=1,
                                    **kwargs):
+        """Randomly sample from training data, without weights."""
         if self.train_data is None:
             raise Exception('Can only sample from training data '
                             'when it is made available')
@@ -125,6 +136,7 @@ class DomainMapper:
                              n_samples=500,
                              seed=1,
                              **kwargs):
+        """Sample neighborhood from training data."""
         xs, ys, _ = self.unweighted_sample_training(predict_fn,
                                                     n_samples=n_samples,
                                                     seed=seed,
@@ -137,18 +149,24 @@ class DomainMapper:
                                    distance_metric='euclidean',
                                    n_samples=500,
                                    **kwargs):
+        """Generate neighborhood data. Should be implemented in subclass."""
         raise NotImplementedError('Implemented in subclasses')
 
     def map_feature_names(self, descriptive_path, remove_last=False):
+        """Map generic rule to rule with feature names.
+        Should be implemented in subclass.
+        """
         raise NotImplementedError('Implemented in subclasses')
 
     def explain(self, fact, foil, counterfactuals, confidence, **kwargs):
+        """Form an explanation. Should be implemented in subclass."""
         raise NotImplementedError('Implemented in subclasses')
 
 
 class DomainMapperTabular(DomainMapper):
-    '''Domain mapper for tabular data (columns and rows,
-    with feature names for columns).'''
+    """Domain mapper for tabular data (columns and rows,
+    with feature names for columns).
+    """
 
     def __init__(self,
                  train_data,
@@ -157,14 +175,16 @@ class DomainMapperTabular(DomainMapper):
                  categorical_features=None,
                  kernel_width=None,
                  seed=1):
-        '''Init.
+        """Init.
 
         Args:
             feature_names (list): Feature names (should be same length
                 as # columns)
+            contrast_names (list-like): Names of contrasts
             categorical_features (list): Indices of categorical features
-            kernel_width: Kernel width for deciding on weights of data
-        '''
+            kernel_width (float): Width of kernel for neighborhood weights
+            seed (int): Seed
+        """
         if kernel_width is None:
             kernel_width = np.sqrt(train_data.shape[1]) * .75
 
@@ -174,7 +194,8 @@ class DomainMapperTabular(DomainMapper):
                          seed=seed)
 
         if type(train_data) is pd.core.frame.DataFrame:
-            raise Exception('Use the subclass DomainMapperPandas to work with Pandas DataFrames')
+            raise Exception('Use the subclass DomainMapperPandas',
+                            'to work with Pandas DataFrames')
         self.train_data = np.array(train_data)
         if feature_names is None:
             feature_names = [i for i in range(train_data.shape[1])]
@@ -191,14 +212,15 @@ class DomainMapperTabular(DomainMapper):
         self.train_data = self._one_hot_encode(self.train_data)
 
     def _one_hot_encode(self, data):
-        '''One hot encoding of data, so that it can be
+        """One hot encoding of data, so that it can be
         used by the decision tree.
-        
+
         Args:
             data: Data to encode
-        
+
         Returns:
-            One-hot Encoded data'''
+            One-hot Encoded data
+        """
         if self.categorical_features is None:
             return data
 
@@ -208,10 +230,11 @@ class DomainMapperTabular(DomainMapper):
             self.unique_vals[column] = set(data[:, column])
 
         # Create encoders
-        self.encoders = {feature: Encoder() for feature in self.categorical_features}
+        self.encoders = {feature: Encoder()
+                         for feature in self.categorical_features}
         for feature in self.categorical_features:
             self.encoders[feature].fit(self.unique_vals[feature])
-        
+
         # Create new mapping of indices
         features = np.arange(self.original_train_data.shape[1])
         self.feature_map = dict()
@@ -229,13 +252,15 @@ class DomainMapperTabular(DomainMapper):
                 self.feature_map[feature] = current_idx
                 self.feature_map_inv[current_idx] = feature
                 current_idx += 1
-        
-        self.feature_map_inv_verbose = dict(itertools.chain.from_iterable([(v, k)] if type(v) is int else [(v_, k) 
-                                                                            for v_ in v] for (k, v) in self.feature_map.items()))        
+
+        cfi = itertools.chain.from_iterable
+        self.feature_map_inv_verbose = dict(cfi([(v, k)] if type(v) is int else [(v_, k)
+                                            for v_ in v]
+                                            for (k, v) in self.feature_map.items()))
         return self.apply_encode(data)
 
     def apply_encode(self, data):
-        '''Encode an instance or data set.'''
+        """Encode an instance or data set."""
         if self.categorical_features is None:
             return data
         x = []
@@ -254,9 +279,9 @@ class DomainMapperTabular(DomainMapper):
                 else:
                     x.append(coo_matrix(column.reshape(-1, 1).astype(int)))
             return hstack(x).toarray()
-    
+
     def _apply_decode(self, data):
-        '''Decode an encoded instance or data set.'''
+        """Decode an encoded instance or data set."""
         if self.categorical_features is None:
             return data
         x = []
@@ -272,7 +297,8 @@ class DomainMapperTabular(DomainMapper):
             for k, _ in enumerate(self.feature_map_inv):
                 to_map = self.feature_map[k]
                 if k in self.categorical_features:
-                    x.append(self.encoders[k].transform(data[:, to_map], inverse=True))
+                    x.append(self.encoders[k].transform(data[:, to_map],
+                                                        inverse=True))
                 else:
                     x.append(data[:, to_map])
             return np.column_stack(x)
@@ -285,7 +311,7 @@ class DomainMapperTabular(DomainMapper):
                                    n_samples=500,
                                    seed=1,
                                    **kwargs):
-        '''Generate neighborhood data for a given point (currently samples training data)
+        """Generate neighborhood data for a given point (currently samples training data)
 
         Args:
             sample: Observed sample
@@ -297,12 +323,14 @@ class DomainMapperTabular(DomainMapper):
             neighor_data (xs around sample),
             weights (weights of instances in xs),
             neighor_data_labels (ys around sample, corresponding to xs)
-        '''
+        """
         from lime.lime_tabular import LimeTabularExplainer
 
         categorical_features = None
         if self.categorical_features is not None:
-            categorical_features = list(itertools.chain.from_iterable(self.feature_map[c] for c in self.categorical_features))
+            cfi = itertools.chain.from_iterable
+            categorical_features = list(cfi(self.feature_map[c]
+                                            for c in self.categorical_features))
 
         e = LimeTabularExplainer(self.train_data,
                                  categorical_features=categorical_features,
@@ -318,7 +346,7 @@ class DomainMapperTabular(DomainMapper):
                 sample)
 
     def map_feature_names(self, explanation, remove_last=False):
-        '''Replace feature ids with feature names in a descriptive path.
+        """Replace feature ids with feature names in a descriptive path.
 
         Args:
             explanation: Explanation obtained with
@@ -327,7 +355,7 @@ class DomainMapperTabular(DomainMapper):
 
         Returns:
             Explanation with feature names mapped
-        '''
+        """
         def get_feature(x):
             ret = x
             if x[0] >= 0 and x[0] < len(self.features):
@@ -337,7 +365,7 @@ class DomainMapperTabular(DomainMapper):
                     ret = Literal(*ret)
                 else:
                     ret = type(x)(ret)
-            
+
             # For categorical features
             if (type(ret) is Literal and self.categorical_features is not None):
                 feature = self.feature_map_inv_verbose[x[0]]
@@ -345,7 +373,8 @@ class DomainMapperTabular(DomainMapper):
                     offset = x[0] - self.feature_map[feature][0]
                     ret.feature = self.features[feature]
                     ret.value = self.encoders[feature].idx2name[offset]
-                    ret.operator = Operator.EQ if ret.operator is Operator.GEQ else Operator.NOTEQ
+                    ret.operator = Operator.EQ if ret.operator is Operator.GEQ \
+                                               else Operator.NOTEQ
                     ret.categorical = True
             return ret
 
@@ -359,9 +388,10 @@ class DomainMapperTabular(DomainMapper):
     def rule_to_str(self,
                     rule,
                     remove_last=False):
+        """Convert a rule to string."""
         rule = rule or []
-        return ' and '.join([str(c) for c in self.map_feature_names(rule, 
-                               remove_last=remove_last)])
+        rules = [str(c) for c in self.map_feature_names(rule, remove_last)]
+        return ' and '.join(rules)
 
     def explain(self,
                 fact,
@@ -372,7 +402,7 @@ class DomainMapperTabular(DomainMapper):
                 fidelity,
                 time,
                 **kwargs):
-        '''Explain an instance using the results of
+        """Explain an instance using the results of
         ContrastiveExplanation.explain_instance()
 
         Args:
@@ -387,7 +417,7 @@ class DomainMapperTabular(DomainMapper):
                 on neighborhood data
             fidelity: ...
             time: Time taken to explain (s)
-        '''
+        """
         fact = self.map_contrast_names(fact)
         foil = self.map_contrast_names(foil)
 
@@ -402,19 +432,29 @@ class DomainMapperTabular(DomainMapper):
 
 
 class DomainMapperPandas(DomainMapperTabular):
-    '''Domain mapper for Pandas dataframes.'''
+    """Domain mapper for Pandas dataframes."""
 
     def __init__(self,
                  train_data,
                  contrast_names=None,
                  kernel_width=None,
                  seed=1):
+        """Init.
+
+        Args:
+            train_data (pd.core.frame.DataFrame): Training data
+            contrast_names (list-like): Names of contrasts
+            kernel_width (float): Width of kernel for neighborhood weights
+            seed (int): Seed
+        """
         if type(train_data) is not pd.core.frame.DataFrame:
-            raise Exception('Use DomainMapperTabular to work with other types of tabular data')
-        
+            raise Exception('Use DomainMapperTabular to work with other',
+                            'types of tabular data')
+
         feature_names = train_data.columns.values
         categorical_features = np.nonzero(train_data.dtypes == 'object')[0]
-        categorical_features = categorical_features if categorical_features != [] else None
+        categorical_features = categorical_features if categorical_features != [] \
+                                                    else None
         train_data = train_data.to_numpy(copy=True)
         super().__init__(train_data,
                          feature_names,
@@ -425,7 +465,7 @@ class DomainMapperPandas(DomainMapperTabular):
 
 
 class DomainMapperImage(DomainMapper):
-    '''Domain mapper for image data (CNN-only) using feature_fn.'''
+    """Domain mapper for image data (CNN-only) using feature_fn."""
 
     def __init__(self,
                  train_data,
@@ -433,6 +473,15 @@ class DomainMapperImage(DomainMapper):
                  contrast_names=None,
                  kernel_width=.25,
                  seed=1):
+        """Init.
+
+        Args:
+            train_data: Training data
+            feature_fn: `???`
+            contrast_names (list-like): Names of contrasts
+            kernel_width (float): Width of kernel for neighborhood weights
+            seed (int): Seed
+        """
         super().__init__(train_data, contrast_names=contrast_names,
                          kernel_width=kernel_width, seed=seed)
         self.feature_fn = feature_fn
@@ -445,6 +494,7 @@ class DomainMapperImage(DomainMapper):
                              n_samples=100,
                              seed=1,
                              **kwargs):
+        """Sample neighborhood from training data."""
         xs, ys, _ = super().unweighted_sample_training(predict_fn,
                                                        n_samples=n_samples,
                                                        seed=seed,
@@ -461,12 +511,15 @@ class DomainMapperImage(DomainMapper):
                                    n_samples=100,
                                    seed=1,
                                    **kwargs):
+        """Generate neighborhood data."""
         raise NotImplementedError()
 
     def map_feature_names(self, descriptive_path, remove_last=False):
+        """Map generic rule to rule with feature names."""
         raise NotImplementedError()
 
     def explain(self, fact, foil, counterfactuals, factuals, confidence, fidelity, time):
+        """Get an explanation for an image."""
         fact = self.map_contrast_names(fact)
         foil = self.map_contrast_names(foil)
 
@@ -475,27 +528,33 @@ class DomainMapperImage(DomainMapper):
 
 
 class DomainMapperImageSegments(DomainMapper):
-    '''Domain mapper for image data (model-agnostic) using segments.'''
+    """Domain mapper for image data (model-agnostic) using segments."""
 
     def __init__(self,
                  *args,
                  **kwargs):
+        """Init.
+
+        For arguments see `DomainMapperImage`.
+        """
         super().__init__(*args, **kwargs)
         self.image = None
         self.segments = None
         self.alt_image = None
 
     def n_features(self):
+        """Determine number of features."""
         if self.segments is None:
             return 0
         return np.unique(self.segments).shape[0]
 
     def apply_encode(self, data):
+        """Apply encoding to data."""
         return data
 
-    def data_labels(self,
-                    predict_fn,
-                    batch_size=30):
+    def _data_labels(self,
+                     predict_fn,
+                     batch_size=30):
         from copy import deepcopy
         from itertools import product
         data = np.array([list(i) for i in product([0, 1],
@@ -530,7 +589,6 @@ class DomainMapperImageSegments(DomainMapper):
                               n_samples=30,
                               batch_size=30,
                               seed=1):
-        '''...'''
         from skimage.segmentation import quickshift, felzenszwalb, slic
 
         self.image = sample
@@ -559,7 +617,7 @@ class DomainMapperImageSegments(DomainMapper):
                 alt_image[:] = hide_color
         self.alt_image = alt_image
 
-        data, preds = self.data_labels(predict_fn, batch_size=batch_size)
+        data, preds = self._data_labels(predict_fn, batch_size=batch_size)
 
         return (data, self._weights(data, distance_metric),
                 preds, np.zeros(self.n_features()))
@@ -573,6 +631,7 @@ class DomainMapperImageSegments(DomainMapper):
                              seed=1,
                              foil_encode_fn=None,
                              **kwargs):
+        """Sample neighborhood instances from the training data."""
         fn = super().unweighted_sample_training
         if foil_encode_fn is None:
             self.alt_image = fn(predict_fn, n_samples=1, seed=seed,
@@ -604,6 +663,9 @@ class DomainMapperImageSegments(DomainMapper):
                                    hide_color=None,
                                    segmentation_fn='quickshift',
                                    **kwargs):
+        """Generate perturbed instances in the neighborhood of the
+        instance to explain.
+        """
         while sample.ndim > 3:
             sample = sample[0]
 
@@ -617,6 +679,7 @@ class DomainMapperImageSegments(DomainMapper):
                                           seed=seed)
 
     def map_feature_names(self, explanation):
+        """Map abstract features to features in the DomainMapper."""
         if (self.image is None or self.alt_image is None or
                 self.segments is None):
             return
@@ -634,6 +697,7 @@ class DomainMapperImageSegments(DomainMapper):
 
     def explain(self, fact, foil, counterfactuals, factuals,
                 confidence, fidelity, time, **kwargs):
+        """Get an explanation for an image."""
         fact = self.map_contrast_names(fact)
         foil = self.map_contrast_names(foil)
 

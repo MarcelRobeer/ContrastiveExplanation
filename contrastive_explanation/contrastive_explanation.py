@@ -1,6 +1,20 @@
+"""Contrastive Explanation [WIP]: pedagogical (model-agnostic) method
+for persuasive explanations based on the user's outcome of interest.
+
+Marcel Robeer (c) 2018 - 2019
+TNO, Utrecht University
+
+Todo:
+    * Add more domain_mappers (image, text)
+    * Add more methods to obtain a foil
+    * Define new strategies for DecisionTreeExplanator
+    * Extend support for regression
+    * Adjust DomainMapper.generate_neighborhood_data() to
+        generate foil samples
+"""
+
 import numpy as np
 import pandas as pd
-import operator
 import warnings
 import sklearn
 import time
@@ -13,24 +27,9 @@ from .domain_mappers import DomainMapper
 from .explanators import Explanator, TreeExplanator
 from .fact_foil import FactFoilClassification, FactFoilRegression
 
-"""Contrastive Explanation [WIP]: pedagogical (model-agnostic) method
-for persuasive explanations based on the user's outcome of interest.
-
-Marcel Robeer (c) 2018
-TNO, Utrecht University
-
-TODO:
-    * Add more domain_mappers (image, text)
-    * Add more methods to obtain a foil
-    * Define new strategies for DecisionTreeExplanator
-    * Extend support for regression
-    * Adjust DomainMapper.generate_neighborhood_data() to
-        generate foil samples
-"""
-
 
 class ContrastiveExplanation:
-    '''General class for creating a Contrastive Explanation.'''
+    """General class for creating a Contrastive Explanation."""
 
     def __init__(self,
                  domain_mapper,
@@ -38,7 +37,7 @@ class ContrastiveExplanation:
                  regression=False,
                  verbose=False,
                  seed=1):
-        '''Init.
+        """Init.
 
         Args:
             explanator: explanator.Explanator() to create an explanation
@@ -48,7 +47,7 @@ class ContrastiveExplanation:
             regression (bool): regression (True) or other type of ML
             verbose (bool): Print intermediary steps of algorithm
             seed (int): Seed for random functions
-        '''
+        """
         self.seed = check_random_state(seed)
 
         if not explanator:
@@ -66,14 +65,14 @@ class ContrastiveExplanation:
         self.fact_foil = None
 
     def _combine_features(self, decision_path):
-        '''Combine tuples with the same feature in a decision path.
+        """Combine tuples with the same feature in a decision path.
 
         Args:
             decision_path: Decision path
 
         Returns:
             Decision path with duplicate features merged.
-        '''
+        """
         if self.verbose:
             print(f'[C] Combining full rules {decision_path}...')
 
@@ -108,9 +107,9 @@ class ContrastiveExplanation:
         return [c for sc in combined for c in sc]
 
     def form_explanation(self, decision, contrastive=True):
-        '''Form an explanation of Literals, combine Literals
+        """Form an explanation of Literals, combine Literals
         when they describe the same feature.
-        '''
+        """
         if decision is None:
             return None
 
@@ -129,20 +128,20 @@ class ContrastiveExplanation:
                          model_predict,
                          fact_sample,
                          foil=None,
-                         foil_pick_method=None,
+                         foil_method=None,
                          foil_strategy='informativeness',
                          generate_data=True,
                          n_samples=500,
                          include_factual=False,
                          epsilon=0.1,
                          **kwargs):
-        '''Contrastively explain an instance (counterfactual).
+        """Contrastively explain an instance (counterfactual).
 
         Args:
             model_predict: Black-box model predictor (proba for class)
             fact_sample: Input sample of fact
-            foil: Manually enter a foil (if None, uses foil_pick_method)
-            foil_pick_method: Method to decide on foil, choose
+            foil: Manually enter a foil (if None, uses foil_method)
+            foil_method: Method to decide on foil, choose
                 class: ('second' = second most probable decision,
                  'random' = randomly pick from not-foil)
                 reg: ('greater' = greater than fact,
@@ -165,7 +164,7 @@ class ContrastiveExplanation:
         Returns:
             Tuple (fact, foil, counterfactual), feed into the explain()
             function in the domain_mapper
-        '''
+        """
         if type(fact_sample) is pd.core.series.Series:
             fact_sample = np.array(fact_sample)
 
@@ -177,13 +176,16 @@ class ContrastiveExplanation:
                                                 epsilon=epsilon)
         else:
             self.fact_foil = FactFoilClassification(verbose=self.verbose)
-    
+
         if foil is not None:
             foil = self.domain_mapper.map_contrast_names(foil, inverse=True)
-            fact, foil = self.fact_foil.get_fact(model_predict, fact_sample, foil)
+            fact, foil = self.fact_foil.get_fact(model_predict,
+                                                 fact_sample,
+                                                 foil)
         if foil is None:
-            fact, foil = self.fact_foil.get_fact_foil(model_predict, fact_sample,
-                                                      foil_method=foil_pick_method)
+            fact, foil = self.fact_foil.get_fact_foil(model_predict,
+                                                      fact_sample,
+                                                      foil_method=foil_method)
 
         # Generate neighborhood data
         if self.verbose:
@@ -208,11 +210,14 @@ class ContrastiveExplanation:
             return fact, foil, None, None, 0, 0, time.time() - st
 
         # Train model and get rules
-        rule, confidence, local_fidelity = self.explanator.get_rule(encoded_fact_sample,
-                                                                    fact, foil,
-                                                                    xs, ys_foil,
-                                                                    weights,
-                                                                    foil_strategy=foil_strategy)
+        exp_return = self.explanator.get_rule(encoded_fact_sample,
+                                              fact,
+                                              foil,
+                                              xs,
+                                              ys_foil,
+                                              weights,
+                                              foil_strategy=foil_strategy)
+        rule, confidence, local_fidelity = exp_return
 
         # Explain difference between fact and closest decision
         counterfactual = self.form_explanation(rule)
@@ -247,7 +252,7 @@ class ContrastiveExplanation:
                 self.explanator.generalize = 2
                 return self.explain_instance(model_predict,
                                              encoded_fact_sample,
-                                             foil_pick_method=foil_pick_method,
+                                             foil_method=foil_method,
                                              foil_strategy=foil_strategy,
                                              generate_data=generate_data,
                                              n_samples=n_samples,
@@ -257,7 +262,7 @@ class ContrastiveExplanation:
 
             n = self.domain_mapper.map_contrast_names
             warnings.warn(f'Could not find a difference between fact '
-                          f'"{n(fact)}" and foil "{n(foil)}"')           
+                          f'"{n(fact)}" and foil "{n(foil)}"')
             if self.regression:
                 warnings.warn('Consider increasing epsilon')
 
@@ -269,7 +274,8 @@ class ContrastiveExplanation:
     def explain_instance_domain(self,
                                 *args,
                                 **kwargs):
-        '''Explain instance and map to domain. For arguments see
-        ContrastiveExplanation.explain_instance().'''
+        """Explain instance and map to domain. For arguments see
+        ContrastiveExplanation.explain_instance().
+        """
         return self.domain_mapper.explain(*self.explain_instance(*args,
                                                                  **kwargs))

@@ -1,0 +1,10 @@
+[flake8]
+exclude = .git,__pycache__,__init__.py,.eggs
+extend-ignore =
+    D413
+    D205
+    D400
+    E127
+select = C,E,F,W,B,B950,D,RST
+
+max-line-length=90
