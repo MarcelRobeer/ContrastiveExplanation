@@ -311,7 +311,7 @@ class DomainMapperTabular(DomainMapper):
                                    n_samples=500,
                                    seed=1,
                                    **kwargs):
-        """Generate neighborhood data for a given point (currently samples training data)
+        """Generate neighborhood data for a given point (currently samples training data).
 
         Args:
             sample: Observed sample
@@ -452,7 +452,7 @@ class DomainMapperPandas(DomainMapperTabular):
                             'types of tabular data')
 
         feature_names = train_data.columns.values
-        categorical_features = np.nonzero(train_data.dtypes == 'object')[0]
+        categorical_features = train_data.columns.get_indexer(train_data.select_dtypes('object').columns)
         categorical_features = categorical_features if categorical_features != [] \
                                                     else None
         train_data = train_data.to_numpy(copy=True)
