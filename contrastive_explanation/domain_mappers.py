@@ -374,7 +374,7 @@ class DomainMapperTabular(DomainMapper):
                     ret.feature = self.features[feature]
                     ret.value = self.encoders[feature].idx2name[offset]
                     ret.operator = Operator.EQ if ret.operator is Operator.GEQ \
-                                               else Operator.NOTEQ
+                                    else Operator.NOTEQ
                     ret.categorical = True
             return ret
 
@@ -452,9 +452,10 @@ class DomainMapperPandas(DomainMapperTabular):
                             'types of tabular data')
 
         feature_names = train_data.columns.values
-        categorical_features = train_data.columns.get_indexer(train_data.select_dtypes('object').columns)
-        categorical_features = categorical_features if categorical_features != [] \
-                                                    else None
+        obj_cols = train_data.select_dtypes('object').columns
+        categorical_features = train_data.columns.get_indexer(obj_cols)
+        if categorical_features == []:
+            categorical_features = None
         train_data = train_data.to_numpy(copy=True)
         super().__init__(train_data,
                          feature_names,

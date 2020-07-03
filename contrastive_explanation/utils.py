@@ -71,9 +71,9 @@ def check_stringvar(*argchecks):
     def checkfunc(a, v_actual, v_target):
         if v_actual not in v_target:
             raise ValueError(f'Unknown {a} "{v_actual}", ' +
-                             f'should be one of "' +
-                             f'", "'.join(str(v) for v in v_target) +
-                             f'"')
+                             'should be one of "' +
+                             '", "'.join(str(v) for v in v_target) +
+                             '"')
     return checkargs(argchecks, checkfunc)
 
 
