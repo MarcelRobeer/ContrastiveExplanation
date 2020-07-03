@@ -18,7 +18,7 @@ Contrastive Explanation provides an explanation for why an instance had the curr
 
 Machine Learning (ML) type | Problem | Explainable AI (XAI) question | Fact | Foil
 ---|---|---|---|---
-Classification | Determine type of animal | *Why is instance a cat rather than a dog?* | Cat | Dog
+Classification | Determine type of animal | *Why is this instance a cat rather than a dog?* | Cat | Dog
 Regression analysis | Predict students' grade | *Why is the predicted grade for this student 6.5 rather than higher?* | 6.5 | More than 6.5 
 Clustering | Find similar flowers | *Why is this flower in cluster 1 rather than cluster 4?* | Cluster 1 | Cluster 4
 
