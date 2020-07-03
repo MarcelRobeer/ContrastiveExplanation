@@ -110,6 +110,7 @@ Maps to a general format that the explanator can form the explanation in, and th
 DomainMapper | Description
 -------------|-------------
 `DomainMapperTabular` | Tabular data (columns with feature names, rows)
+`DomainMapperPandas` | Uses a `pandas` dataframe to create a `DomainMapperTabular`, while automatically inferring feature names
 `DomainMapperImage` | Image data
 
 <a name="license"></a>
