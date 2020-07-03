@@ -210,6 +210,9 @@ class DomainMapperTabular(DomainMapper):
 
         self.original_train_data = self.train_data
         self.train_data = self._one_hot_encode(self.train_data)
+        self.feature_counts = self._get_counts()
+
+        self.scaler = self._init_scaler()
 
     def _one_hot_encode(self, data):
         """One hot encoding of data, so that it can be
@@ -258,6 +261,27 @@ class DomainMapperTabular(DomainMapper):
                                             for v_ in v]
                                             for (k, v) in self.feature_map.items()))
         return self.apply_encode(data)
+
+    def _get_counts(self):
+        """Get counts of categorical features."""
+        count_dict = dict()
+        if self.categorical_features is not None:
+            for f in self.categorical_features:
+                count_dict[f] = [self.train_data[:, i].sum() for i in self.feature_map[f]]
+        return count_dict
+
+    def _init_scaler(self):
+        """Fit a standard scaler to get means and standard devs per feature."""
+        scaler = sklearn.preprocessing.StandardScaler(with_mean=False)
+        scaler.fit(self.train_data)
+
+        # Set mean and standard deviation for one-hot encoded categoricals
+        if self.categorical_features is not None:
+            for feature in self.categorical_features:
+                for sub_feature in self.feature_map[feature]:
+                    scaler.mean_[sub_feature] = 0
+                    scaler.scale_[sub_feature] = 1
+        return scaler
 
     def apply_encode(self, data):
         """Encode an instance or data set."""
@@ -311,7 +335,7 @@ class DomainMapperTabular(DomainMapper):
                                    n_samples=500,
                                    seed=1,
                                    **kwargs):
-        """Generate neighborhood data for a given point (currently samples training data).
+        """Generate neighborhood data for a given point.
 
         Args:
             sample: Observed sample
@@ -324,26 +348,37 @@ class DomainMapperTabular(DomainMapper):
             weights (weights of instances in xs),
             neighor_data_labels (ys around sample, corresponding to xs)
         """
-        from lime.lime_tabular import LimeTabularExplainer
-
-        categorical_features = None
-        if self.categorical_features is not None:
-            cfi = itertools.chain.from_iterable
-            categorical_features = list(cfi(self.feature_map[c]
-                                            for c in self.categorical_features))
-
-        e = LimeTabularExplainer(self.train_data,
-                                 categorical_features=categorical_features,
-                                 discretize_continuous=False,
-                                 random_state=check_random_state(seed))
-        _, neighbor_data = e._LimeTabularExplainer__data_inverse(sample,
-                                                                 n_samples)
-        scaled_data = (neighbor_data - e.scaler.mean_) / e.scaler.scale_
-        predict_data = self._apply_decode(neighbor_data)
-        return (*self._data(neighbor_data, scaled_data,
+        neighor_data = self.__generate(sample, n_samples)
+        scaled_data = (neighor_data - self.scaler.mean_) / self.scaler.scale_
+        predict_data = self._apply_decode(neighor_data)
+        return (*self._data(neighor_data, scaled_data,
                             predict_data, distance_metric,
                             predict_fn),
                 sample)
+
+    def __generate(self, sample, n_samples, sample_around_instance=False):
+        columns = sample.shape[0]
+
+        # Continuous features
+        data = self.seed.normal(0, 1, n_samples * columns).reshape(n_samples, columns)
+        if sample_around_instance:
+            data = data * self.scaler.scale_ + sample
+        else:
+            data = data * self.scaler.scale_ + self.scaler.mean_
+
+        # Categorical features
+        if self.categorical_features is not None:
+            for column in self.categorical_features:
+                values = [i for i in self.feature_map[column]]
+                freqs = self.feature_counts[column] / sum(self.feature_counts[column])
+                data[:, values] = 0
+                picked_indices = self.seed.choice(values, size=n_samples,
+                                                  replace=True, p=freqs)
+                data[np.arange(len(data)), picked_indices] = 1
+
+        # Set first data point to original instance
+        data[0] = sample
+        return data
 
     def map_feature_names(self, explanation, remove_last=False):
         """Replace feature ids with feature names in a descriptive path.

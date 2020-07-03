@@ -21,7 +21,6 @@ setup(name='ContrastiveExplanation',
       license='BSD 3-Clause License',
       packages=find_packages(),
       install_requires=[
-        'lime',
         'matplotlib',
         'networkx',
         'numpy',

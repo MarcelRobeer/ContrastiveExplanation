@@ -1,7 +1,7 @@
 # Contrastive Explanation (Foil Trees)
 > **Contrastive and counterfactual explanations for machine learning (ML)**
 > 
-> Marcel Robeer (2018-2019), *TNO/Utrecht University*
+> Marcel Robeer (2018-2020), *TNO/Utrecht University*
 
 ![Travis (.org)](https://img.shields.io/travis/MarcelRobeer/ContrastiveExplanation?style=flat-square) ![License](https://img.shields.io/github/license/marcelrobeer/ContrastiveExplanation?style=flat-square) ![Python version](https://img.shields.io/badge/python-3.6%20%7C%203.7-blue?style=flat-square)
 
