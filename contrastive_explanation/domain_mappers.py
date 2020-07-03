@@ -174,6 +174,7 @@ class DomainMapperTabular(DomainMapper):
                  contrast_names=None,
                  categorical_features=None,
                  kernel_width=None,
+                 assume_independence=False,
                  seed=1):
         """Init.
 
@@ -183,6 +184,8 @@ class DomainMapperTabular(DomainMapper):
             contrast_names (list-like): Names of contrasts
             categorical_features (list): Indices of categorical features
             kernel_width (float): Width of kernel for neighborhood weights
+            assume_independence (bool): Whether to assume feature
+                independence when generating data
             seed (int): Seed
         """
         if kernel_width is None:
@@ -202,6 +205,8 @@ class DomainMapperTabular(DomainMapper):
         self.features = feature_names
         self.categorical_features = categorical_features
 
+        self.assume_independence = assume_independence
+
         self.unique_vals = None
         self.encoders = None
         self.feature_map = categorical_features
@@ -212,6 +217,8 @@ class DomainMapperTabular(DomainMapper):
         self.train_data = self._one_hot_encode(self.train_data)
         self.feature_counts = self._get_counts()
 
+        self.norm_covariances = None
+        self.norm_means = None
         self.scaler = self._init_scaler()
 
     def _one_hot_encode(self, data):
@@ -281,6 +288,12 @@ class DomainMapperTabular(DomainMapper):
                 for sub_feature in self.feature_map[feature]:
                     scaler.mean_[sub_feature] = 0
                     scaler.scale_[sub_feature] = 1
+
+        # Calculate covariances
+        normalized_data = sklearn.preprocessing.normalize(self.train_data)
+        self.norm_covariances = np.cov(normalized_data, rowvar=False)
+        self.norm_means = normalized_data.mean(0)
+
         return scaler
 
     def apply_encode(self, data):
@@ -356,11 +369,19 @@ class DomainMapperTabular(DomainMapper):
                             predict_fn),
                 sample)
 
-    def __generate(self, sample, n_samples, sample_around_instance=False):
+    def __generate(self, sample, n_samples,
+                   sample_around_instance=False):
         columns = sample.shape[0]
 
         # Continuous features
         data = self.seed.normal(0, 1, n_samples * columns).reshape(n_samples, columns)
+        if not self.assume_independence:  # ensure the same covariances as original data
+            try:
+                data = np.dot(np.linalg.cholesky(self.norm_covariances), data.T).T
+            except np.linalg.LinAlgError:
+                data = self.seed.multivariate_normal(self.norm_means,
+                                                     self.norm_covariances,
+                                                     size=n_samples)
         if sample_around_instance:
             data = data * self.scaler.scale_ + sample
         else:
