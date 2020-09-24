@@ -8,6 +8,7 @@ import numpy as np
 import sklearn
 import warnings
 import itertools
+import scipy
 
 from sklearn.utils import check_random_state
 from scipy.sparse import coo_matrix, hstack
@@ -174,7 +175,7 @@ class DomainMapperTabular(DomainMapper):
                  contrast_names=None,
                  categorical_features=None,
                  kernel_width=None,
-                 assume_independence=False,
+                 assume_independence=True,
                  seed=1):
         """Init.
 
@@ -375,13 +376,11 @@ class DomainMapperTabular(DomainMapper):
 
         # Continuous features
         data = self.seed.normal(0, 1, n_samples * columns).reshape(n_samples, columns)
-        if not self.assume_independence:  # ensure the same covariances as original data
-            try:
-                data = np.dot(np.linalg.cholesky(self.norm_covariances), data.T).T
-            except np.linalg.LinAlgError:
-                data = self.seed.multivariate_normal(self.norm_means,
-                                                     self.norm_covariances,
-                                                     size=n_samples)
+        if not self.assume_independence:
+            normalized_data = self.train_data / self.train_data.max(axis=0)
+            half = n_samples // 2
+            data[half:] = scipy.stats.gaussian_kde(normalized_data.T).resample(half).T
+
         if sample_around_instance:
             data = data * self.scaler.scale_ + sample
         else:
