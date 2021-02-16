@@ -206,7 +206,8 @@ class DomainMapperTabular(DomainMapper):
         self.features = np.array(feature_names)
         self.categorical_features = np.array(categorical_features)
         if not issubclass(self.categorical_features.dtype.type, (int, np.integer)):
-            self.categorical_features = np.where(np.isin(self.features, self.categorical_features))[0]
+            self.categorical_features = np.where(np.isin(self.features,
+                                                         self.categorical_features))[0]
 
         self.assume_independence = assume_independence
         self.unique_vals = None
