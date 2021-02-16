@@ -23,7 +23,7 @@ setup(name='ContrastiveExplanation',
       install_requires=[
         'matplotlib',
         'networkx',
-        'numpy',
+        'numpy>=1.16.5',
         'pandas',
         'scipy',
         'scikit-learn>=0.18',
