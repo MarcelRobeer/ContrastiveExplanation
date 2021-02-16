@@ -10,7 +10,7 @@ with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
           long_description = f.read()
 
 setup(name='ContrastiveExplanation',
-      version='0.1',
+      version='0.2',
       python_requires='>3.6',
       description='Contrastive and counterfactual explanations for machine learning (ML) using Foil Trees',
       long_description=long_description,

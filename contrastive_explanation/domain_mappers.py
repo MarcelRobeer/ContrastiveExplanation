@@ -189,9 +189,6 @@ class DomainMapperTabular(DomainMapper):
                 independence when generating data
             seed (int): Seed
         """
-        if kernel_width is None:
-            kernel_width = np.sqrt(train_data.shape[1]) * .75
-
         super().__init__(train_data=train_data,
                          contrast_names=contrast_names,
                          kernel_width=kernel_width,
@@ -200,14 +197,18 @@ class DomainMapperTabular(DomainMapper):
         if type(train_data) is pd.core.frame.DataFrame:
             raise Exception('Use the subclass DomainMapperPandas',
                             'to work with Pandas DataFrames')
+
         self.train_data = np.array(train_data)
+        if kernel_width is None:
+            kernel_width = np.sqrt(self.train_data.shape[1]) * .75
         if feature_names is None:
-            feature_names = [i for i in range(train_data.shape[1])]
-        self.features = feature_names
-        self.categorical_features = categorical_features
+            feature_names = [i for i in range(self.train_data.shape[1])]
+        self.features = np.array(feature_names)
+        self.categorical_features = np.array(categorical_features)
+        if not issubclass(self.categorical_features.dtype.type, (int, np.integer)):
+            self.categorical_features = np.where(np.isin(self.features, self.categorical_features))[0]
 
         self.assume_independence = assume_independence
-
         self.unique_vals = None
         self.encoders = None
         self.feature_map = categorical_features
@@ -268,6 +269,7 @@ class DomainMapperTabular(DomainMapper):
         self.feature_map_inv_verbose = dict(cfi([(v, k)] if type(v) is int else [(v_, k)
                                             for v_ in v]
                                             for (k, v) in self.feature_map.items()))
+
         return self.apply_encode(data)
 
     def _get_counts(self):
@@ -301,6 +303,7 @@ class DomainMapperTabular(DomainMapper):
         """Encode an instance or data set."""
         if self.categorical_features is None:
             return data
+
         x = []
         if data.ndim == 1:  # Single instance
             data = data.reshape(1, -1)
@@ -507,7 +510,7 @@ class DomainMapperPandas(DomainMapperTabular):
                             'types of tabular data')
 
         feature_names = train_data.columns.values
-        obj_cols = train_data.select_dtypes('object').columns
+        obj_cols = train_data.select_dtypes(['category', 'object']).columns
         categorical_features = train_data.columns.get_indexer(obj_cols)
         if categorical_features == []:
             categorical_features = None
