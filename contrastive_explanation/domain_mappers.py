@@ -11,7 +11,6 @@ import itertools
 import scipy
 
 from sklearn.utils import check_random_state
-from scipy.sparse import coo_matrix, hstack
 
 from .rules import Literal, Operator
 from .utils import cache, check_stringvar, show_image, rbf, Encoder
@@ -174,7 +173,7 @@ class DomainMapperTabular(DomainMapper):
                  feature_names,
                  contrast_names=None,
                  categorical_features=None,
-                 kernel_width=None,
+                 kernel_width=.25,
                  assume_independence=True,
                  seed=1):
         """Init.
@@ -304,23 +303,17 @@ class DomainMapperTabular(DomainMapper):
         """Encode an instance or data set."""
         if self.categorical_features is None:
             return data
+        one_instance = data.ndim == 1 or data.shape[0] == 1
 
-        x = []
-        if data.ndim == 1:  # Single instance
+        if one_instance:  # Single instance
             data = data.reshape(1, -1)
-            for i, value in enumerate(data.T):
-                if i in self.categorical_features:
-                    x.extend(self.encoders[i].transform(value).toarray())
-                else:
-                    x.append(value.astype(int))
-            return hstack(x).toarray()[0]
-        else:
-            for i, column in enumerate(data.T):
-                if i in self.categorical_features:
-                    x.append(self.encoders[i].transform(column))
-                else:
-                    x.append(coo_matrix(column.reshape(-1, 1).astype(int)))
-            return hstack(x).toarray()
+
+        x = [self.encoders[i].transform(column).toarray() if i in self.categorical_features
+             else column.reshape(-1, 1) for i, column in enumerate(data.T)]
+
+        if one_instance:
+            return np.hstack(x).reshape(-1)
+        return np.hstack(x)
 
     def _apply_decode(self, data):
         """Decode an encoded instance or data set."""
@@ -366,10 +359,10 @@ class DomainMapperTabular(DomainMapper):
             weights (weights of instances in xs),
             neighor_data_labels (ys around sample, corresponding to xs)
         """
-        neighor_data = self.__generate(sample, n_samples)
-        scaled_data = (neighor_data - self.scaler.mean_) / self.scaler.scale_
-        predict_data = self._apply_decode(neighor_data)
-        return (*self._data(neighor_data, scaled_data,
+        neighbor_data = self.__generate(sample, n_samples)
+        scaled_data = (neighbor_data - self.scaler.mean_) / self.scaler.scale_
+        predict_data = self._apply_decode(neighbor_data)
+        return (*self._data(neighbor_data, scaled_data,
                             predict_data, distance_metric,
                             predict_fn),
                 sample)
@@ -394,10 +387,10 @@ class DomainMapperTabular(DomainMapper):
         if self.categorical_features is not None:
             for column in self.categorical_features:
                 values = [i for i in self.feature_map[column]]
-                freqs = self.feature_counts[column] / sum(self.feature_counts[column])
+                freqs = np.array(self.feature_counts[column])
                 data[:, values] = 0
                 picked_indices = self.seed.choice(values, size=n_samples,
-                                                  replace=True, p=freqs)
+                                                  replace=True, p=freqs/sum(freqs))
                 data[np.arange(len(data)), picked_indices] = 1
 
         # Set first data point to original instance
@@ -496,7 +489,7 @@ class DomainMapperPandas(DomainMapperTabular):
     def __init__(self,
                  train_data,
                  contrast_names=None,
-                 kernel_width=None,
+                 kernel_width=.25,
                  seed=1):
         """Init.
 
