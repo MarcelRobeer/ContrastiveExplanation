@@ -308,7 +308,8 @@ class DomainMapperTabular(DomainMapper):
         if one_instance:  # Single instance
             data = data.reshape(1, -1)
 
-        x = [self.encoders[i].transform(column).toarray() if i in self.categorical_features
+        x = [self.encoders[i].transform(column).toarray()
+             if i in self.categorical_features
              else column.reshape(-1, 1) for i, column in enumerate(data.T)]
 
         if one_instance:
