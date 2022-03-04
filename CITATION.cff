@@ -13,11 +13,12 @@ authors:
 - family-names: "Neerincx"
   given-names: "Mark"
 title: "Contrastive Explanations with Local Foil Trees"
-doi: arXiv:1806.07470
 preferred-citation:
+  conference:
+    - name: "2018 Workshop on Human Interpretability in Machine Learning (WHI)"
   identifiers:
     - type: other
       value: "arXiv:1806.07470"
-      description: Paper presented at 2018 ICML Workshop on Human Interpretability in Machine Learning (WHI 2018), Stockholm, Sweden
+      description: "Paper presented at 2018 ICML Workshop on Human Interpretability in Machine Learning (WHI 2018), Stockholm, Sweden"
 date-released: 2018-06-19
 url: "https://github.com/MarcelRobeer/ContrastiveExplanation"
