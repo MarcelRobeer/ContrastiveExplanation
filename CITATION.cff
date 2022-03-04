@@ -1,24 +1,32 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
+message: "If you use the Foil Trees software, please cite it as below."
 authors:
 - family-names: "van der Waa"
   given-names: "Jasper"
 - family-names: "Robeer"
   given-names: "Marcel"
   orcid: "https://orcid.org/0000-0002-6430-9774"
+  affiliation: "Utrecht University, The Netherlands"
 - family-names: "van Diggelen"
   given-names: "Jurriaan"
 - family-names: "Brinkhuis"
   given-names: "Matthieu"
 - family-names: "Neerincx"
   given-names: "Mark"
+keywords:
+- explanation
+- machine learning
+- artificial intelligence
+- contrastive explanation
+- foil
+- black box
 title: "Contrastive Explanations with Local Foil Trees"
 preferred-citation:
   conference:
-    - name: "2018 Workshop on Human Interpretability in Machine Learning (WHI)"
+  - name: "2018 Workshop on Human Interpretability in Machine Learning (WHI)"
   identifiers:
-    - type: other
-      value: "arXiv:1806.07470"
-      description: "Paper presented at 2018 ICML Workshop on Human Interpretability in Machine Learning (WHI 2018), Stockholm, Sweden"
+  - type: other
+    value: "arXiv:1806.07470"
+    description: "Paper presented at 2018 ICML Workshop on Human Interpretability in Machine Learning (WHI 2018), Stockholm, Sweden"
 date-released: 2018-06-19
 url: "https://github.com/MarcelRobeer/ContrastiveExplanation"
