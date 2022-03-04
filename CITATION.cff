@@ -19,7 +19,7 @@ conference: "2018 Workshop on Human Interpretability in Machine Learning (WHI)"
 date-released: 2018-06-19
 url: "https://github.com/MarcelRobeer/ContrastiveExplanation"
 preferred-citation:
-  type: inproceedings
+  type: conference-paper
   authors: 
   - family-names: "van der Waa"
     given-names: "Jasper"
