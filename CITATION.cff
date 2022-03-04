@@ -19,7 +19,7 @@ conference: "2018 Workshop on Human Interpretability in Machine Learning (WHI)"
 date-released: 2018-06-19
 url: "https://github.com/MarcelRobeer/ContrastiveExplanation"
 preferred-citation:
-  type: conference
+  type: inproceedings
   authors: 
   - family-names: "van der Waa"
     given-names: "Jasper"
@@ -34,5 +34,5 @@ preferred-citation:
   - family-names: "Neerincx"
     given-names: "Mark"
   title: "Contrastive Explanations with Local Foil Trees"
-  conference: "2018 Workshop on Human Interpretability in Machine Learning (WHI)"
+  booktitle: "2018 Workshop on Human Interpretability in Machine Learning (WHI)"
   year: 2018
