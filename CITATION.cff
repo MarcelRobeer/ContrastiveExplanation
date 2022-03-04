@@ -17,10 +17,5 @@ doi: "10.5281/zenodo.6328219"
 title: "Contrastive Explanations with Local Foil Trees"
 conference: "2018 Workshop on Human Interpretability in Machine Learning (WHI)"
 year: 2018
-preferred-citation:
-  identifiers:
-  - type: other
-    value: "arXiv:1806.07470"
-    description: "Paper presented at 2018 ICML Workshop on Human Interpretability in Machine Learning (WHI 2018), Stockholm, Sweden"
 date-released: 2018-06-19
 url: "https://github.com/MarcelRobeer/ContrastiveExplanation"
