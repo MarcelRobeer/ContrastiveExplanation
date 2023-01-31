@@ -1,3 +1,7 @@
+:warning: **WARNING**: This version of Foil Trees is no longer actively maintained. For a re-implementation see [explabox.readthedocs.io](https://explabox.readthedocs.io/en/latest/api/explabox.explain.text.html\#explabox.explain.text.Explainer.explain_prediction).
+
+---
+
 # Contrastive Explanation (Foil Trees)
 > **Contrastive and counterfactual explanations for machine learning (ML)**
 > 
